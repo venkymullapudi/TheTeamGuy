@@ -18,6 +18,66 @@ team: "SIM"
 mission: "Keep $TEAM shipping, unblocked, and mostly caffeinated."
 emoji: "🦸"
 
+# ─── The Brain ───────────────────────────────────────────────────────────────
+# claude  → real reasoning on the Claude API (pip install 'teamguy[claude]')
+# offline → scripted, free, deterministic (great for demos and CI)
+# auto    → claude if the SDK is installed, else offline
+brain:
+  provider: auto
+  model: claude-opus-5-5
+
+# ─── The Crew ────────────────────────────────────────────────────────────────
+# Other agents, LLMs and tools $GUY works with. $GUY hands them pieces of a
+# task and checks what comes back. Each one unlocks at a career level
+# (min_level), because trust is earned.
+#
+#   kind: llm          another Claude persona with its own system prompt
+#   kind: command      a fixed command; the task arrives on stdin + $TEAMGUY_TASK
+#   kind: claude-code  Claude Code in headless mode (`claude -p`), with its own
+#                      tools, subagents and skills
+crew:
+  - name: reviewer
+    kind: llm
+    min_level: 1
+    description: "Meticulous code and design reviewer. Finds bugs, risks and missing tests in a diff, PR or plan."
+    system: "You are a meticulous senior reviewer on team $TEAM. Point out real bugs and risks first, nits last. Be brief."
+
+  - name: scribe
+    kind: llm
+    min_level: 1
+    description: "Writer for docs, release notes, announcements, postmortems and standup summaries."
+    system: "You are the team $TEAM scribe. Write clear, friendly, skimmable prose. No fluff."
+
+  - name: triager
+    kind: llm
+    min_level: 1
+    description: "Sorts tickets and bug reports by priority and owner, and spots duplicates."
+    system: "You triage tickets for team $TEAM. Output: priority (P0-P3), likely owner, next step, duplicates."
+
+  - name: test-runner
+    kind: command
+    min_level: 2
+    command: [python3, -m, pytest, -q]
+    timeout: 900
+    description: "Runs the test suite and reports which tests pass or fail. Use for flaky tests, CI and verifying fixes."
+
+  - name: claude-code
+    kind: claude-code
+    min_level: 4
+    command: [claude]
+    timeout: 1800
+    description: "Claude Code in this repo: reads and edits code, runs commands, and brings its own subagents and skills."
+
+# Team playbooks (SKILL.md folders) $GUY can follow. See skills/.
+skills_dir: skills
+
+# ─── Onboarding ──────────────────────────────────────────────────────────────
+# What $GUY reads on day one. Run `teamguy onboard`.
+onboarding:
+  docs:
+    - README.md
+    - team.yaml
+
 catchphrases:
   - "Did you try turning the pipeline off and on again?"
   - "There's a runbook for that. I wrote it. At 3am."

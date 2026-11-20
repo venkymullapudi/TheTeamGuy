@@ -326,6 +326,20 @@ def _meter(value: int, width: int = 20) -> str:
     return c("█" * filled, "green") + c("░" * (width - filled), "dim") + f" {value:>3}"
 
 
+# ─── level up ────────────────────────────────────────────────────────────────
+
+
+def level_up(team: Team, level) -> str:
+    title = f"LEVEL UP!  {level.badge}  L{level.number} {level.name(team.guy)}"
+    bar = "★" * (len(title) + 4)
+    return "\n".join([
+        c(bar, "yellow"),
+        c(f"  {title}", "bold", "yellow"),
+        c(f"  Unlocked: {level.perk_for(team.guy)}", "green"),
+        c(bar, "yellow"),
+    ])
+
+
 # ─── Claude Code subagent ────────────────────────────────────────────────────
 
 

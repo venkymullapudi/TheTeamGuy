@@ -6,7 +6,15 @@
 > Now they have a CLI.
 
 `teamguy` reads a `team.yaml` describing **everything your team's go-to person
-does** and turns it into a persona named after your team:
+does** and turns it into an AI teammate named after your team. The guy is a
+real member of the team. They:
+
+- 🎒 **get onboarded**: meet the team, read the docs, learn the duties, meet the crew, ship a first task
+- 🤝 **work with other agents, skills and LLMs**: hand pieces of a task to the crew, follow team playbooks, check the results
+- 🎤 **join standups**: give a real update from their work log, listen, and volunteer for action items
+- 📈 **level up**: every contribution earns XP, and each level unlocks more crew, more autonomy and more trust
+
+The guy is named after your team:
 
 | Team name       | Your guy               |
 | --------------- | ---------------------- |
@@ -21,10 +29,112 @@ This repo ships with [`team.yaml`](team.yaml) for team **SIM**, so meet
 ## Install
 
 ```bash
-pip install -e .
+pip install -e '.[claude]'
 ```
 
-Requires Python 3.9+ (and PyYAML, which gets installed for you).
+The `claude` extra installs the Anthropic SDK (Python 3.10+), so the guy thinks
+with Claude (`claude-opus-5-5` by default). Credentials come from
+`ANTHROPIC_API_KEY` or `ant auth login`. Without it, use the **offline brain**:
+scripted, free and deterministic. It works on Python 3.9+ and is great for demos
+and CI.
+
+```bash
+pip install -e .
+teamguy --brain offline onboard     # or: export TEAMGUY_BRAIN=offline
+```
+
+## A day in the life
+
+```bash
+teamguy onboard                                  # day one: quests, notes, +XP
+teamguy work "write release notes for v2.3"      # the guy gets it done, with the crew
+teamguy standup --join < updates.txt             # attends standup, volunteers for items
+teamguy work 3                                   # works a backlog item from standup
+teamguy level                                    # 🎒 L1 Intern  ███████░░░  220/300 XP
+teamguy kudos "saved the release"                # say thanks (+15 XP, they'll remember)
+```
+
+```
+🛠️  TheSIMGuy picks up #2: Help Alex: fixing login bug, blocked on review
+   📖 TheSIMGuy opens the 'ticket-triage' playbook
+   🤝 TheSIMGuy → reviewer: Review the login fix in PR 481, focus on session handling…
+   ↩️  reviewer: Two issues: the session cookie isn't marked Secure, and there's no test for…
+
+✅ Done: Reviewed Alex's login fix with the reviewer; flagged two issues on the PR.
+
+✨ +45 XP
+★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+  LEVEL UP!  🔧  L2 Junior TheSIMGuy
+  Unlocked: Can run team commands like the test suite.
+★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+```
+
+## The teammate
+
+### 🎒 Onboarding
+
+`teamguy onboard` runs the quests a new hire would do:
+
+| Quest               | What happens                                                      | XP |
+| ------------------- | ----------------------------------------------------------------- | -- |
+| 👋 Meet the team    | Learns the roster and posts a hello                               | 25 |
+| 📚 Read the docs    | Reads `onboarding.docs` and writes notes for future reference     | 50 |
+| 🗂️ Learn the duties | Studies every duty and plans the first two weeks                  | 25 |
+| 🤖 Meet the crew    | Checks in with every agent and tool and sees what's installed     | 25 |
+| 🚢 Ship a first task | Finishes a real task with `teamguy work`                         | 50 |
+
+The notes the guy writes go into every prompt afterwards, so they remember what
+they learned. Until onboarding is done, the guy stays a 🐣 **New Hire**.
+
+### 🤝 Crew: other agents, LLMs and tools
+
+The guy doesn't do everything alone. In `team.yaml`, `crew:` lists who they can
+hand work to:
+
+| Kind          | What it is                                                                   |
+| ------------- | ---------------------------------------------------------------------------- |
+| `llm`         | Another Claude persona with its own system prompt (reviewer, scribe, …)      |
+| `command`     | A fixed command, like `[python3, -m, pytest, -q]`. The task arrives on stdin and in `$TEAMGUY_TASK`, never spliced into the command line |
+| `claude-code` | Claude Code in headless mode (`claude -p`), with its own tools, subagents and skills |
+
+Each crew member has a `min_level`. An Intern can ask the reviewer for a
+second opinion, but only a Senior gets Claude Code.
+
+### 📖 Skills: team playbooks
+
+`skills/<name>/SKILL.md` files (the same shape as Claude Code skills) are
+playbooks the guy opens and follows: `release-notes`, `postmortem`,
+`flaky-test-hunt` and `ticket-triage` ship with the repo. Add your own; set
+`min_level` in the frontmatter to gate them.
+
+### 🎤 Standups
+
+`teamguy standup` previews the guy's update, built from what they actually did
+since the last workday. `teamguy standup --join` attends: it reads teammates'
+updates (`Name: update` per line, from `--updates FILE` or stdin), offers help
+where it fits, and puts those action items on the backlog. Notes are saved to
+`.teamguy/standups/`.
+
+### 📈 Levels
+
+| Level | Title                   | XP     | Unlocks                                            |
+| ----- | ----------------------- | ------ | -------------------------------------------------- |
+| 🐣 L0 | New Hire                | 0      | Beginner skills; must finish onboarding            |
+| 🎒 L1 | Intern                  | 100    | LLM crew (reviewer, scribe, triager)               |
+| 🔧 L2 | Junior TheSIMGuy        | 300    | Team commands (test-runner)                        |
+| 🤝 L3 | Teammate                | 700    | Files their own follow-up tasks                    |
+| 🧭 L4 | Senior TheSIMGuy        | 1,500  | Claude Code; more steps per task                   |
+| 🏗️ L5 | Staff TheSIMGuy         | 3,000  | Picks their own work: `teamguy work --next`        |
+| 🔮 L6 | Principal TheSIMGuy     | 6,000  | Everything                                         |
+| 👑 L7 | Legendary TheSIMGuy     | 10,000 | Songs are sung                                     |
+
+XP: **20 × effort** per finished task, **+5** per crew member worked with,
+**+10** per standup, **+5** per action item taken, **+15** per kudos, and **+5**
+even for a blocked task (they learned something). Each level also gives the guy
+more model turns per task.
+
+State (XP, backlog, journal, notes) lives in `.teamguy/state.json` next to
+`team.yaml`.
 
 ## Summon your guy
 
@@ -42,11 +152,18 @@ teamguy init SIM
 
 | Command                     | What it does                                                    |
 | --------------------------- | --------------------------------------------------------------- |
-| `teamguy whoami`            | Banner, mission, and a catchphrase                              |
+| `teamguy onboard [--status]`| Run the onboarding quests                                       |
+| `teamguy work "<task>"`     | Do a task (or `work <id>` from the backlog, `--next` at Staff+) |
+| `teamguy standup [--join]`  | Preview the update, or attend and volunteer for action items    |
+| `teamguy backlog [add/drop]`| The guy's task list                                             |
+| `teamguy level`             | XP, level, and what unlocks next                                |
+| `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |
+| `teamguy kudos "<msg>"`     | Say thanks                                                      |
+| `teamguy journal`           | Recent contributions                                            |
+| `teamguy whoami`            | Banner, mission, level, and a catchphrase                       |
 | `teamguy duties [-v]`       | Everything the guy does (`-v` adds checklists)                  |
 | `teamguy duty <id>`         | One duty in detail, e.g. `teamguy duty release`                 |
 | `teamguy today [--date]`    | Today's agenda plus a ☕ coffee forecast                         |
-| `teamguy standup [--date]`  | An auto-generated standup (same day = same standup)             |
 | `teamguy oncall [--weeks]`  | Who's holding the pager this week and the next few              |
 | `teamguy ask "<question>"`  | Answers from the team FAQ                                       |
 | `teamguy excuse`            | A battle-tested excuse for when things break                    |
@@ -54,8 +171,8 @@ teamguy init SIM
 | `teamguy agent`             | Exports the guy as a **Claude Code subagent**                   |
 | `teamguy validate`          | Checks `team.yaml` for mistakes                                 |
 
-Use `-f path/to/team.yaml` to point at a different team. Set `NO_COLOR=1` to
-turn colors off.
+Use `-f path/to/team.yaml` to point at a different team, `--brain offline` to
+skip the API, and `NO_COLOR=1` to turn colors off.
 
 ```
 $ teamguy today
@@ -164,6 +281,8 @@ who owns this service". This repo includes the generated
 pip install -e '.[dev]'
 pytest
 ```
+
+The tests use the offline brain and a fake Claude client, so they cost nothing.
 
 ## License
 

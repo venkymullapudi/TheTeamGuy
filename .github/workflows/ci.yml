@@ -18,8 +18,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e '.[dev]'
       - run: pytest -q
+        env:
+          TEAMGUY_BRAIN: offline
       - name: Summon TheSIMGuy
+        env:
+          TEAMGUY_BRAIN: offline
         run: |
           teamguy validate
           teamguy today
           teamguy card
+          teamguy onboard
+          teamguy work "triage the open tickets"
+          teamguy level

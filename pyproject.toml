@@ -12,6 +12,7 @@ requires-python = ">=3.9"
 dependencies = ["PyYAML>=6.0"]
 
 [project.optional-dependencies]
+claude = ["anthropic>=1.0; python_version >= '3.10'"]
 dev = ["pytest>=7"]
 
 [project.scripts]

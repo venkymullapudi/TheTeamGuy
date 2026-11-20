@@ -59,6 +59,24 @@ class FAQ:
     keywords: List[str] = field(default_factory=list)
 
 
+CREW_KINDS = ("llm", "command", "claude-code")
+DEFAULT_MODEL = "claude-opus-5-5"
+
+
+@dataclass
+class CrewMember:
+    """Another agent, LLM or tool on the team that the guy can hand work to."""
+
+    name: str
+    kind: str  # llm | command | claude-code
+    description: str
+    min_level: int = 0
+    model: Optional[str] = None
+    system: str = ""
+    command: List[str] = field(default_factory=list)
+    timeout: int = 600
+
+
 @dataclass
 class Team:
     name: str
@@ -75,6 +93,19 @@ class Team:
     rotation_start: Optional[dt.date] = None
     blockers: List[str] = field(default_factory=list)
     excuses: List[str] = field(default_factory=list)
+    crew: List[CrewMember] = field(default_factory=list)
+    brain_provider: str = "auto"
+    model: str = DEFAULT_MODEL
+    skills_dir: str = "skills"
+    onboarding_docs: List[str] = field(default_factory=list)
+    base_dir: Path = field(default_factory=Path.cwd)
+
+    @property
+    def state_dir(self) -> Path:
+        return self.base_dir / ".teamguy"
+
+    def member(self, name: str) -> Optional[CrewMember]:
+        return next((m for m in self.crew if m.name == name), None)
 
     def duty(self, duty_id: str) -> Optional[Duty]:
         return next((d for d in self.duties if d.id == duty_id), None)
@@ -158,7 +189,21 @@ def parse_team(raw: Any) -> Team:
         except ValueError:
             raise TeamConfigError("oncall.rotation_start should be YYYY-MM-DD.") from None
 
+    crew = _parse_crew(raw.get("crew") or [])
+    brain = raw.get("brain") or {}
+    if not isinstance(brain, dict):
+        raise TeamConfigError("'brain' should be a mapping (provider, model).")
+    provider = str(brain.get("provider", "auto"))
+    if provider not in ("auto", "claude", "offline"):
+        raise TeamConfigError("brain.provider must be auto, claude or offline.")
+    onboarding = raw.get("onboarding") or {}
+
     return Team(
+        crew=crew,
+        brain_provider=provider,
+        model=str(brain.get("model", DEFAULT_MODEL)),
+        skills_dir=str(raw.get("skills_dir", "skills")),
+        onboarding_docs=[str(d) for d in onboarding.get("docs") or ["README.md"]],
         name=name,
         guy=guy,
         slug=guy_slug(name),
@@ -176,6 +221,41 @@ def parse_team(raw: Any) -> Team:
     )
 
 
+def _parse_crew(items: Any) -> List[CrewMember]:
+    if not isinstance(items, list):
+        raise TeamConfigError("'crew' should be a list.")
+    crew: List[CrewMember] = []
+    for i, m in enumerate(items):
+        if not isinstance(m, dict) or not m.get("name") or not m.get("description"):
+            raise TeamConfigError(f"crew[{i}] needs a 'name' and a 'description'.")
+        name = str(m["name"])
+        if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", name):
+            raise TeamConfigError(f"crew name {name!r} should be lowercase letters, digits, - or _.")
+        if any(c.name == name for c in crew):
+            raise TeamConfigError(f"Duplicate crew member {name!r}.")
+        kind = str(m.get("kind", "llm"))
+        if kind not in CREW_KINDS:
+            raise TeamConfigError(f"crew {name!r}: kind must be one of {', '.join(CREW_KINDS)}.")
+        command = m.get("command") or []
+        if isinstance(command, str):
+            raise TeamConfigError(f"crew {name!r}: command must be a list like [pytest, -q], not a shell string.")
+        if kind == "command" and not command:
+            raise TeamConfigError(f"crew {name!r}: kind 'command' needs a command list.")
+        crew.append(
+            CrewMember(
+                name=name,
+                kind=kind,
+                description=str(m["description"]),
+                min_level=int(m.get("min_level", 0)),
+                model=str(m["model"]) if m.get("model") else None,
+                system=str(m.get("system", "")),
+                command=[str(c) for c in command],
+                timeout=int(m.get("timeout", 600)),
+            )
+        )
+    return crew
+
+
 def load_team(path: Path) -> Team:
     if not path.exists():
         raise TeamConfigError(
@@ -185,7 +265,9 @@ def load_team(path: Path) -> Team:
         raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
         raise TeamConfigError(f"{path} isn't valid YAML (probably a tab somewhere):\n{exc}") from None
-    return parse_team(raw)
+    team = parse_team(raw)
+    team.base_dir = path.resolve().parent
+    return team
 
 
 def render_template(team: str) -> str:
