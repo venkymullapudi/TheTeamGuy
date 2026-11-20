@@ -1,0 +1,264 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  team.yaml — the sacred scroll of $GUY
+#
+#  Every team has one. The person who knows where the wiki is, why the build
+#  is red, and which Slack channel the deploy bot moved to. This file
+#  describes everything they do, so the rest of us can pretend to understand.
+#
+#  Tokens you can use in any text field:
+#    $TEAM  → the team name          (e.g. SIM)
+#    $GUY   → the legend themselves  (e.g. TheSIMGuy)
+#
+#  Cadences understood by `teamguy today`:
+#    always · daily · weekdays · weekly:mon[,thu] · biweekly:fri
+#    monthly:15 · monthly:last · quarterly · on-demand
+# ─────────────────────────────────────────────────────────────────────────────
+
+team: "SIM"
+mission: "Keep $TEAM shipping, unblocked, and mostly caffeinated."
+emoji: "🦸"
+
+catchphrases:
+  - "Did you try turning the pipeline off and on again?"
+  - "There's a runbook for that. I wrote it. At 3am."
+  - "Quick question? It's never a quick question."
+  - "It worked in staging. Staging is a state of mind."
+  - "I'm not saying it's DNS. I'm saying it's always DNS."
+  - "Ship it. But, like, carefully."
+
+superpowers:
+  - "Finds the right Confluence page in under 10 seconds"
+  - "Knows every service's owner, even the ones nobody owns"
+  - "Reads stack traces like bedtime stories"
+  - "Can sense a flaky test from three repos away"
+  - "Remembers why that weird config flag exists"
+
+kryptonite:
+  - "Meetings that could have been a Slack message"
+  - "\"Hey, got a sec?\" with no follow-up"
+  - "Merge conflicts in package-lock.json"
+  - "Friday 4:59pm deploys"
+
+# ─── The Work ────────────────────────────────────────────────────────────────
+# effort: coffee cups ☕ required (1–5)
+
+duties:
+  - id: oncall
+    title: "On-Call Firefighter"
+    emoji: "🚒"
+    cadence: always
+    effort: 5
+    description: "Answers the pager, calms the dashboards, and writes 'mitigated' with trembling hands."
+    checklist:
+      - "Acknowledge the page before it escalates to the VP"
+      - "Check the dashboards (all 14 of them)"
+      - "Post an update in #$TEAM-incidents every 30 min"
+      - "Hand off cleanly; leave notes nicer than you found them"
+    catchphrase: "I'm on it. Nobody touch prod."
+
+  - id: quick-questions
+    title: "Official Answerer of Quick Questions"
+    emoji: "🙋"
+    cadence: always
+    effort: 3
+    description: "Fields every 'quick question' DM, then quietly turns the good ones into docs."
+    checklist:
+      - "Answer in a thread, not a DM, so future humans can find it"
+      - "If it's asked twice, it goes in the FAQ"
+      - "If it's asked three times, it goes in the onboarding doc"
+    catchphrase: "Great question. Here's a link."
+
+  - id: standup
+    title: "Standup Host"
+    emoji: "🎤"
+    cadence: weekdays
+    effort: 1
+    description: "Runs standup in 15 minutes or less. Deep dives get politely parked."
+    checklist:
+      - "Start on time, even if only two people showed up"
+      - "Park the rabbit holes in 'after-party'"
+      - "Note blockers and actually chase them"
+    catchphrase: "Let's take that offline."
+
+  - id: pr-review
+    title: "PR Review Shepherd"
+    emoji: "🐑"
+    cadence: weekdays
+    effort: 3
+    description: "Herds open pull requests toward merge. No PR left behind for more than 2 days."
+    checklist:
+      - "Sweep the open-PR list every morning"
+      - "Review or reassign anything older than 48h"
+      - "Leave at least one compliment per review"
+      - "Approve the README typo fixes immediately; they are heroes"
+    catchphrase: "LGTM, with one tiny nit (it's not tiny)."
+
+  - id: triage
+    title: "Ticket Triage Wizard"
+    emoji: "🧙"
+    cadence: weekly:mon,thu
+    effort: 2
+    description: "Sorts the incoming ticket pile into 'now', 'next', 'later', and 'lol no'."
+    checklist:
+      - "Label every new ticket with priority and owner"
+      - "Close duplicates with a kind link to the original"
+      - "Ping reporters for missing repro steps"
+    catchphrase: "Can you share the exact error message? No, the whole thing."
+
+  - id: flaky-tests
+    title: "Flaky Test Whisperer"
+    emoji: "🧪"
+    cadence: weekly:wed
+    effort: 4
+    description: "Hunts down tests that pass on Tuesdays and fail during full moons."
+    checklist:
+      - "Pull the flake report from CI"
+      - "Quarantine repeat offenders (with a ticket, not a shrug)"
+      - "Fix at least one. Just one. You can do it."
+    catchphrase: "It's not flaky, it's misunderstood."
+
+  - id: release
+    title: "Release Captain"
+    emoji: "🚀"
+    cadence: biweekly:tue
+    effort: 4
+    description: "Cuts the release, writes the notes, and never deploys on a Friday."
+    checklist:
+      - "Freeze the branch and announce it loudly"
+      - "Run the smoke tests and actually read the output"
+      - "Write release notes humans can read"
+      - "Watch the error rate for 30 minutes after deploy"
+    catchphrase: "T-minus one coffee and counting."
+
+  - id: deps
+    title: "Dependency Gardener"
+    emoji: "🌱"
+    cadence: monthly:1
+    effort: 3
+    description: "Bumps libraries, reads changelogs, and keeps CVE scanners from screaming."
+    checklist:
+      - "Merge the safe bot PRs"
+      - "Read changelogs for anything with a major version bump"
+      - "Upgrade one scary thing per month so it never becomes a project"
+    catchphrase: "Breaking changes? In MY minor version?"
+
+  - id: docs
+    title: "Keeper of the Wiki"
+    emoji: "📚"
+    cadence: biweekly:fri
+    effort: 2
+    description: "Keeps runbooks, READMEs, and the onboarding doc from rotting."
+    checklist:
+      - "Fix every doc someone complained about this sprint"
+      - "Delete one page that's lying to people"
+      - "Make sure the 'Getting Started' page still actually gets you started"
+    catchphrase: "It's documented. I'll send you the link. Again."
+
+  - id: onboarding
+    title: "Onboarding Buddy"
+    emoji: "🤝"
+    cadence: on-demand
+    effort: 3
+    description: "Welcomes new folks, gets them access, and makes their first PR merge in week one."
+    checklist:
+      - "Request laptop, accounts, and the 47 access groups"
+      - "Pair on a 'good first issue'"
+      - "Tell them which meetings are optional (most of them)"
+    catchphrase: "Welcome! Don't worry, nobody understands the build system."
+
+  - id: retro
+    title: "Retro Facilitator"
+    emoji: "🔁"
+    cadence: biweekly:fri
+    effort: 2
+    description: "Runs the retro and, crucially, makes sure action items actually happen."
+    checklist:
+      - "Review last retro's action items first (the moment of truth)"
+      - "Keep it blameless and snack-supported"
+      - "Leave with no more than three action items, each with an owner"
+    catchphrase: "What went well? Besides the outage being short."
+
+  - id: cost-watch
+    title: "Cloud Bill Watchdog"
+    emoji: "💸"
+    cadence: monthly:last
+    effort: 2
+    description: "Finds the forgotten GPU instance someone spun up 'just for a quick test' in March."
+    checklist:
+      - "Open the cost dashboard and brace yourself"
+      - "Hunt orphaned volumes, idle clusters, and zombie load balancers"
+      - "Post the month's savings with a dramatic before/after"
+    catchphrase: "Who launched a p4d.24xlarge and named it 'test2'?"
+
+  - id: postmortem
+    title: "Postmortem Author"
+    emoji: "📝"
+    cadence: on-demand
+    effort: 3
+    description: "Turns every incident into a blameless writeup with real follow-ups."
+    checklist:
+      - "Timeline, impact, root cause, contributing factors"
+      - "Action items with owners and due dates"
+      - "Share it widely; incidents are free lessons (that cost a lot)"
+    catchphrase: "The root cause was a series of reasonable decisions."
+
+  - id: vibes
+    title: "Chief Vibes Officer"
+    emoji: "🎂"
+    cadence: quarterly
+    effort: 1
+    description: "Organizes team lunches, celebrates launches, and never forgets a birthday."
+    checklist:
+      - "Plan the quarterly team hangout"
+      - "Celebrate the quarter's wins (shipped things, killed bugs)"
+      - "Order cake. There must be cake."
+    catchphrase: "Morale is a deliverable."
+
+# ─── Who's on call? ──────────────────────────────────────────────────────────
+# Rotates weekly starting on `rotation_start` (a Monday).
+# Yes, $GUY is in there twice. That's just how it works.
+oncall:
+  rotation_start: "2026-01-05"
+  roster:
+    - "$GUY"
+    - "Alex"
+    - "$GUY"
+    - "Sam"
+
+# ─── FAQ (powers `teamguy ask`) ──────────────────────────────────────────────
+faq:
+  - q: "Where are the docs?"
+    a: "In the wiki, under '$TEAM > Start Here'. If it's not there, $GUY is already writing it."
+    keywords: [docs, wiki, documentation, readme, confluence, runbook]
+  - q: "Why is the build red?"
+    a: "Check the flaky-test quarantine list first. Then blame DNS. Then ask $GUY."
+    keywords: [build, ci, red, failing, broken, pipeline, test, flaky]
+  - q: "How do I get access to prod?"
+    a: "File an access request, get your manager to approve it, then wait for the ticket gods. $GUY can nudge them."
+    keywords: [access, prod, production, permission, permissions, iam, ssh]
+  - q: "Can I deploy on Friday?"
+    a: "You *can*. You also *can* microwave a fork. $GUY strongly recommends Tuesday."
+    keywords: [deploy, friday, release, ship, weekend]
+  - q: "Who owns this service?"
+    a: "Check the service catalog. If it says '$TEAM' with no person, congratulations: it's $GUY."
+    keywords: [owner, owns, ownership, service, who, team]
+  - q: "Where do I ask for help?"
+    a: "#$TEAM-help, in a thread, with the full error message. $GUY reads everything."
+    keywords: [help, channel, slack, ask, support, question]
+
+# ─── Ammo for `teamguy standup` and `teamguy excuse` ─────────────────────────
+blockers:
+  - "Waiting on a code review from someone who is 'heads down'"
+  - "Docker ate my disk again"
+  - "VPN decided it was a philosophical question today"
+  - "The staging environment is being used for 'a quick demo'"
+  - "None, which is suspicious"
+
+excuses:
+  - "It was a cosmic ray. Bit flip. Happens to the best of us."
+  - "That's not a bug, it's an undocumented feature from 2019."
+  - "The intern from three summers ago wrote that. I'm just its guardian."
+  - "Works on my machine. Shipping my machine is a Q3 initiative."
+  - "The YAML had a tab in it. Somewhere. Always."
+  - "Upstream changed their API without telling anyone. Classic upstream."
+  - "I was waiting for the cache to expire. It's been three days."
