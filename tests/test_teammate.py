@@ -274,3 +274,20 @@ def test_cli_teammate_flow(team, capsys, monkeypatch):
     updates.write_text("Alex: need a review\n")
     assert run("standup", "--join", "--updates", str(updates)) == 0
     assert "Help Alex" in capsys.readouterr().out
+
+
+def test_oauth_token_in_api_key_gets_a_clear_error(monkeypatch):
+    anthropic = pytest.importorskip("anthropic")
+    import httpx2
+
+    from teamguy.brain import BrainError
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-oat01-not-a-real-token")
+    resp = httpx2.Response(429, request=httpx2.Request("POST", "https://api.anthropic.com/v1/messages"))
+
+    def boom(**_):
+        raise anthropic.RateLimitError("Error", response=resp, body=None)
+
+    brain = ClaudeBrain(client=NS(beta=NS(messages=NS(create=boom))))
+    with pytest.raises(BrainError, match="OAuth token"):
+        brain.complete("sys", "hi")

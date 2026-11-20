@@ -140,10 +140,16 @@ class ClaudeBrain:
         except Exception as exc:
             if anthropic is None or not isinstance(exc, anthropic.AnthropicError):
                 raise
+            if isinstance(exc, (anthropic.AuthenticationError, anthropic.RateLimitError)) and _oauth_token_as_api_key():
+                raise BrainError(
+                    "ANTHROPIC_API_KEY holds an OAuth token (sk-ant-oat…, e.g. from `claude setup-token`), "
+                    "which is for Claude Code, not direct API calls. Create an API key (sk-ant-api…) at "
+                    "console.anthropic.com, or use --brain offline."
+                ) from None
             if isinstance(exc, anthropic.AuthenticationError):
                 raise BrainError("No Claude credentials. Run `ant auth login` or set ANTHROPIC_API_KEY, or use --brain offline.") from None
             if isinstance(exc, anthropic.RateLimitError):
-                raise BrainError("Rate limited by the Claude API. Coffee break, then retry.") from None
+                raise BrainError(f"Rate limited by the Claude API ({exc.message}). Coffee break, then retry.") from None
             if isinstance(exc, anthropic.APIStatusError):
                 raise BrainError(f"Claude API error {exc.status_code}: {exc.message}") from None
             if isinstance(exc, anthropic.APIConnectionError):
@@ -183,6 +189,10 @@ class ClaudeBrain:
         if response.stop_reason == "refusal":
             return fallback or "I'll pass on that one."
         return self._text(response) or fallback
+
+
+def _oauth_token_as_api_key() -> bool:
+    return os.environ.get("ANTHROPIC_API_KEY", "").startswith("sk-ant-oat")
 
 
 def make_brain(team: Team, override: Optional[str] = None):
