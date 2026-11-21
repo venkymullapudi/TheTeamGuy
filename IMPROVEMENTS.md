@@ -46,3 +46,5 @@ nobody has answered yet. Change them here if you disagree.
 - [x] Crew (llm / command / claude-code), skills, work loop, standups,
   onboarding, levels L0–L7.
 - [x] Clear error for an OAuth token in `ANTHROPIC_API_KEY` (`18b101c`).
+- [x] Fix: standup attendance XP keyed to the meeting day, not the wall clock
+  (a standup for another date no longer pays out twice; fixed the red baseline).

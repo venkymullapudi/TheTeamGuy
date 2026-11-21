@@ -247,6 +247,18 @@ def test_join_standup_volunteers_and_awards_once(team, state):
     assert state.xp == 20  # attendance counts once per day
 
 
+def test_standup_attendance_is_per_meeting_day_not_wall_clock(team, state):
+    # Standups for other days (past or future) each count once, whatever today is.
+    mon, tue = dt.date(2020, 3, 2), dt.date(2031, 6, 3)
+    join_standup(team, state, OfflineBrain(), [], mon, out=quiet)
+    join_standup(team, state, OfflineBrain(), [], mon, out=quiet)
+    assert state.xp == 10
+    assert state.did_today("standup", mon)
+    assert not state.did_today("standup", dt.date.today())
+    join_standup(team, state, OfflineBrain(), [], tue, out=quiet)
+    assert state.xp == 20
+
+
 def test_standup_update_uses_real_work(team, state):
     task = state.add_task("fix the build", 1)
     work_on(team, state, OfflineBrain(), task, out=quiet)

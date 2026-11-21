@@ -119,7 +119,8 @@ def join_standup(team: Team, state: State, brain, updates: List[Tuple[str, str]]
     )
 
     if not state.did_today("standup", day):
-        report.awards.append(state.award("standup", XP["standup"], f"Joined standup on {day:%b %d}"))
+        report.awards.append(state.award("standup", XP["standup"], f"Joined standup on {day:%b %d}",
+                                         day=day.isoformat()))
     if report.action_items:
         report.awards.append(state.award(
             "standup_items", XP["standup_action_item"] * len(report.action_items),

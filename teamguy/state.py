@@ -90,7 +90,11 @@ class State:
         return [e for e in self.data["log"] if dt.datetime.fromisoformat(e["at"]) >= since]
 
     def did_today(self, kind: str, day: dt.date) -> bool:
-        return any(e["kind"] == kind and e["at"].startswith(day.isoformat()) for e in self.data["log"])
+        """Was there a `kind` entry for `day`? Entries that carry their own `day`
+        (a standup held for a given date) count for that date, not for when they
+        were logged."""
+        iso = day.isoformat()
+        return any(e["kind"] == kind and e.get("day", e["at"][:10]) == iso for e in self.data["log"])
 
     # ─── backlog ─────────────────────────────────────────────────────────
     @property
