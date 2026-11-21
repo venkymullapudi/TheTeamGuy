@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from .config import Team
-from .levels import Level, level_for
+from .levels import XP, Level, level_for
 
 ONBOARDING_QUESTS = ("meet-the-team", "read-the-docs", "learn-the-duties", "meet-the-crew", "first-task")
 
@@ -117,7 +117,10 @@ class State:
         return next((t for t in self.tasks if t["id"] == task_id), None)
 
     def open_tasks(self) -> List[Dict[str, Any]]:
-        return [t for t in self.tasks if t["status"] in ("todo", "blocked")]
+        return [t for t in self.tasks if t["status"] in ("todo", "blocked", "review")]
+
+    def in_review(self) -> List[Dict[str, Any]]:
+        return [t for t in self.tasks if t["status"] == "review"]
 
     def next_task(self) -> Optional[Dict[str, Any]]:
         todo = [t for t in self.tasks if t["status"] == "todo"]
@@ -127,6 +130,29 @@ class State:
         task["status"] = status
         task["summary"] = summary
         task["finished"] = _now()
+
+    # ─── review: XP is earned, not self-reported ─────────────────────────
+    @staticmethod
+    def task_xp(task: Dict[str, Any]) -> int:
+        crew = task.get("crew_used") or []
+        return XP["task_done_per_effort"] * int(task["effort"]) + XP["teamwork_per_member"] * len(crew)
+
+    def accept_task(self, task: Dict[str, Any]) -> Award:
+        """A human signs off: the task is done and the guy gets the XP."""
+        if task["status"] != "review":
+            raise ValueError(f"#{task['id']} is {task['status']}, not waiting for review")
+        task["status"] = "done"
+        task["accepted"] = _now()
+        return self.award("task_done", self.task_xp(task), f"Shipped #{task['id']}: {task['title']}", task=task["id"])
+
+    def reject_task(self, task: Dict[str, Any], why: str) -> Award:
+        """Send it back with feedback; the next attempt sees every note."""
+        if task["status"] != "review":
+            raise ValueError(f"#{task['id']} is {task['status']}, not waiting for review")
+        why = why.strip() or "Not quite. Try again."
+        task["status"] = "todo"
+        task.setdefault("feedback", []).append({"at": _now(), "why": why})
+        return self.award("task_rejected", 0, f"Back to the drawing board on #{task['id']}: {why}", task=task["id"])
 
     # ─── knowledge (what the guy learned) ────────────────────────────────
     def learn(self, topic: str, notes: str) -> None:

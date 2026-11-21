@@ -139,7 +139,7 @@ def test_claude_brain_tool_loop(team, state):
     report = work_on(team, state, ClaudeBrain(client=client), task, out=quiet)
 
     assert report.status == "done" and report.crew_used == ["reviewer"]
-    assert task["status"] == "done" and task["effort"] == 3
+    assert task["status"] == "review" and task["effort"] == 3
     first = client.requests[0]
     assert first["model"] == "claude-opus-5-5"
     assert first["fallbacks"] == "default"
@@ -148,7 +148,9 @@ def test_claude_brain_tool_loop(team, state):
     # tool results are sent back with matching ids
     tool_results = client.requests[2]["messages"][-1]["content"]
     assert tool_results[0]["tool_use_id"] == "t1" and "missing test" in tool_results[0]["content"]
-    assert state.xp == 100 + 20 * 3 + 5
+    assert state.xp == 100  # nothing until a human signs off
+    state.accept_task(task)
+    assert task["status"] == "done" and state.xp == 100 + 20 * 3 + 5
 
 
 def test_claude_brain_refusal_and_step_cap(team, state):
@@ -200,6 +202,32 @@ def test_offline_work_and_first_task_quest(team, state):
     assert report.status == "done" and report.skills_used == ["release-notes"]
     assert "first-task" in state.data["onboarding"]
     assert State.load(team).xp == state.xp  # persisted
+
+
+def test_xp_is_earned_on_accept_not_self_reported(team, state):
+    graduate(state, 100)
+    task = state.add_task("write release notes for v2", 2)
+    work_on(team, state, OfflineBrain(), task, out=quiet)
+    assert task["status"] == "review" and state.xp == 100
+    assert task in state.open_tasks() and "accept 1" in " ".join(render_update(team, state, FRI).split())
+    award = state.accept_task(task)
+    assert award.xp == State.task_xp(task) == 20 * 2 + 5 * len(task["crew_used"])
+    assert task["status"] == "done" and state.xp == 100 + award.xp
+    with pytest.raises(ValueError):
+        state.accept_task(task)  # no double-dipping
+
+
+def test_rejected_work_goes_back_with_feedback(team, state):
+    task = state.add_task("fix the build", 1)
+    work_on(team, state, OfflineBrain(), task, out=quiet)
+    xp = state.xp
+    state.reject_task(task, "the build is still red")
+    assert task["status"] == "todo" and state.xp == xp
+    assert task["feedback"][0]["why"] == "the build is still red"
+
+    client = FakeClient([NS(stop_reason="refusal", content=[])])
+    work_on(team, state, ClaudeBrain(client=client), task, out=quiet)
+    assert "the build is still red" in client.requests[0]["messages"][0]["content"]
 
 
 def test_followups_unlock_at_teammate(team, state):
@@ -279,6 +307,13 @@ def test_cli_teammate_flow(team, capsys, monkeypatch):
     assert run("backlog", "add", "update", "the", "runbook") == 0
     assert run("work", "2") == 0
     assert run("work", "--next") == 1  # locked until Staff
+    capsys.readouterr()
+    assert run("accept", "1") == 0
+    assert "accepted" in capsys.readouterr().out
+    assert run("accept", "1") == 1  # already done
+    assert run("reject", "2", "add", "the", "on-call", "section") == 0
+    assert State.load(team).task(2)["status"] == "todo"
+    assert run("accept", "99") == 1
     for cmd in (["level"], ["crew"], ["skills"], ["journal"], ["backlog", "--all"], ["kudos", "nice"], ["standup"],
                 ["onboard", "--status"], ["whoami"]):
         assert run(*cmd) == 0, cmd

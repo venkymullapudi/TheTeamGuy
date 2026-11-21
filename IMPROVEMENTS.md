@@ -12,11 +12,6 @@ nobody has answered yet. Change them here if you disagree.
 
 ## Now
 
-- [ ] **Earned XP, not self-reported XP** *(default: human accepts)*. A finished
-  task goes to `review` instead of `done`. `teamguy accept <id>` grants the XP;
-  `teamguy reject <id> "why"` sends it back to `todo` with the feedback, and the
-  next attempt sees it in the prompt. Standup, onboarding and kudos XP stay
-  automatic.
 - [ ] **Deliverables are saved** *(default: work files)*. Each task writes
   `.teamguy/work/<id>-<slug>.md`: the final deliverable, the crew transcript
   (who was asked what, what came back), and tokens used. `teamguy show <id>`
@@ -48,3 +43,5 @@ nobody has answered yet. Change them here if you disagree.
 - [x] Clear error for an OAuth token in `ANTHROPIC_API_KEY` (`18b101c`).
 - [x] Fix: standup attendance XP keyed to the meeting day, not the wall clock
   (a standup for another date no longer pays out twice; fixed the red baseline).
+- [x] Earned XP: finished tasks go to 👀 review; `teamguy accept <id>` pays the
+  XP, `teamguy reject <id> "why"` sends it back with feedback the retry sees.

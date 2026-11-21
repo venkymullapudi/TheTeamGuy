@@ -27,7 +27,7 @@ def my_update(team: Team, state: State, day: dt.date) -> Dict[str, List[str]]:
     until = dt.datetime.combine(day, dt.time())
     done = [
         e["summary"] for e in state.log_since(since)
-        if e["kind"] in ("task_done", "task_blocked", "onboarding", "kudos")
+        if e["kind"] in ("task_done", "task_review", "task_blocked", "onboarding", "kudos")
         and dt.datetime.fromisoformat(e["at"]) < until
     ]
     from .persona import due_on  # local import: persona imports nothing from here
@@ -35,6 +35,8 @@ def my_update(team: Team, state: State, day: dt.date) -> Dict[str, List[str]]:
     today = [f"#{t['id']} {t['title']}" for t in state.tasks if t["status"] == "todo"][:3]
     today += [f"{d.emoji} {d.title}" for d in due_on(team, day) if d.cadence not in ("always",)][:2]
     blockers = [f"#{t['id']} {t['title']}" for t in state.tasks if t["status"] == "blocked"]
+    blockers += [f"#{t['id']} {t['title']} is waiting on your review (`teamguy accept {t['id']}`)"
+                 for t in state.in_review()]
     return {"yesterday": done[-4:], "today": today, "blockers": blockers}
 
 

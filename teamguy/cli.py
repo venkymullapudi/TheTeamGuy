@@ -61,6 +61,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--next", action="store_true", help="pick the next backlog task (Staff+ only)")
     s.add_argument("--effort", type=int, default=2, help="1 (tiny) to 5 (huge), for new tasks")
 
+    s = sub.add_parser("accept", help="sign off on finished work and grant the XP")
+    s.add_argument("id", type=int)
+    s = sub.add_parser("reject", help="send finished work back to todo with feedback")
+    s.add_argument("id", type=int)
+    s.add_argument("why", nargs="+", help="what to fix; the next attempt sees it")
+
     s = sub.add_parser("backlog", help="the guy's task list")
     bsub = s.add_subparsers(dest="backlog_cmd", metavar="<action>")
     b = bsub.add_parser("add", help="add a task")
@@ -126,7 +132,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(persona.today(team, args.date))
         elif args.cmd == "standup":
             return _standup(team, args)
-        elif args.cmd in ("work", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal"):
+        elif args.cmd in ("work", "accept", "reject", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal"):
             return _teammate(team, args)
         elif args.cmd == "oncall":
             print(persona.oncall(team, args.date, max(1, args.weeks)))
@@ -276,6 +282,27 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print("  Empty. Try `teamguy onboard`.")
         return 0
 
+    if args.cmd in ("accept", "reject"):
+        t = state.task(args.id)
+        if not t:
+            print(f"No task #{args.id}.", file=sys.stderr)
+            return 1
+        if t["status"] != "review":
+            print(f"#{t['id']} isn't waiting for review (it's {t['status']}).", file=sys.stderr)
+            return 1
+        if args.cmd == "accept":
+            award = state.accept_task(t)
+            state.save()
+            print(f"🚢 #{t['id']} accepted! {team.guy}: \"Reviewed by a real human. Framing this.\"")
+            _announce(team, [award])
+        else:
+            why = " ".join(args.why)
+            state.reject_task(t, why)
+            state.save()
+            print(f"↩️  #{t['id']} is back on the backlog. {team.guy}: \"Fair. Taking notes: {why}\"")
+            print(persona.c(f"   Try again: teamguy work {t['id']}", "dim"))
+        return 0
+
     if args.cmd == "backlog":
         if args.backlog_cmd == "add":
             t = state.add_task(" ".join(args.title), args.effort)
@@ -291,7 +318,7 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             state.save()
             print(f"🗑️  Dropped #{t['id']}: {t['title']}")
             return 0
-        icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "done": "✅"}
+        icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "review": "👀", "done": "✅"}
         shown = state.tasks if args.all else state.open_tasks()
         print(persona.c(f"{team.guy}'s backlog", "bold"))
         for t in shown:
@@ -321,10 +348,14 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
         print('Give me something to do: teamguy work "..." (or a backlog #id)', file=sys.stderr)
         return 1
     report = work_on(team, state, make_brain(team, args.brain), task)
-    verdict = "✅ Done" if report.status == "done" else "🧱 Blocked"
+    verdict = "👀 Ready for review" if report.status == "done" else "🧱 Blocked"
     print(f"\n{verdict}: {report.summary}")
     if report.result and report.result.text and report.result.text != report.summary:
         print(persona.c("\n" + report.result.text, "dim"))
+    if report.status == "done":
+        xp = State.task_xp(task)
+        print(persona.c(f"\n   Worth +{xp} XP once you sign off: teamguy accept {task['id']}"
+                        f'  (or: teamguy reject {task["id"]} "what to fix")', "dim"))
     _announce(team, report.awards)
     return 0
 

@@ -50,6 +50,8 @@ teamguy onboard                                  # day one: quests, notes, +XP
 teamguy work "write release notes for v2.3"      # the guy gets it done, with the crew
 teamguy standup --join < updates.txt             # attends standup, volunteers for items
 teamguy work 3                                   # works a backlog item from standup
+teamguy accept 3                                 # you sign off: the XP is paid out
+teamguy reject 3 "missing the rollback steps"    # back to todo; the retry sees your note
 teamguy level                                    # 🎒 L1 Intern  ███████░░░  220/300 XP
 teamguy kudos "saved the release"                # say thanks (+15 XP, they'll remember)
 ```
@@ -60,7 +62,12 @@ teamguy kudos "saved the release"                # say thanks (+15 XP, they'll r
    🤝 TheSIMGuy → reviewer: Review the login fix in PR 481, focus on session handling…
    ↩️  reviewer: Two issues: the session cookie isn't marked Secure, and there's no test for…
 
-✅ Done: Reviewed Alex's login fix with the reviewer; flagged two issues on the PR.
+👀 Ready for review: Reviewed Alex's login fix with the reviewer; flagged two issues on the PR.
+
+   Worth +45 XP once you sign off: teamguy accept 2  (or: teamguy reject 2 "what to fix")
+
+$ teamguy accept 2
+🚢 #2 accepted! TheSIMGuy: "Reviewed by a real human. Framing this."
 
 ✨ +45 XP
 ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
@@ -128,7 +135,12 @@ where it fits, and puts those action items on the backlog. Notes are saved to
 | 🔮 L6 | Principal TheSIMGuy     | 6,000  | Everything                                         |
 | 👑 L7 | Legendary TheSIMGuy     | 10,000 | Songs are sung                                     |
 
-XP: **20 × effort** per finished task, **+5** per crew member worked with,
+XP is earned, not self-reported: finished work lands in 👀 review, and only
+`teamguy accept <id>` pays out the task XP. `teamguy reject <id> "why"` sends it
+back to the backlog, and the guy sees every note on the next attempt. Standup,
+onboarding and kudos XP stay automatic.
+
+XP: **20 × effort** per accepted task, **+5** per crew member worked with,
 **+10** per standup, **+5** per action item taken, **+15** per kudos, and **+5**
 even for a blocked task (they learned something). Each level also gives the guy
 more model turns per task.
@@ -155,6 +167,8 @@ teamguy init SIM
 | `teamguy onboard [--status]`| Run the onboarding quests                                       |
 | `teamguy work "<task>"`     | Do a task (or `work <id>` from the backlog, `--next` at Staff+) |
 | `teamguy standup [--join]`  | Preview the update, or attend and volunteer for action items    |
+| `teamguy accept <id>`       | Sign off on finished work and grant the XP                      |
+| `teamguy reject <id> "why"` | Send it back to todo with feedback for the next attempt         |
 | `teamguy backlog [add/drop]`| The guy's task list                                             |
 | `teamguy level`             | XP, level, and what unlocks next                                |
 | `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |

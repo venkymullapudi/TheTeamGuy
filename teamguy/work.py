@@ -1,5 +1,6 @@
 """Getting things done: the guy takes a task, hands pieces to the crew, uses
-skills, files follow-ups, and reports back. Every finished task earns XP."""
+skills, files follow-ups, and reports back. Finished work goes to review: a
+human runs `teamguy accept <id>` to grant the XP, or `teamguy reject <id>`."""
 
 from __future__ import annotations
 
@@ -170,6 +171,10 @@ def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = pr
     if locked:
         prompt += "\nCrew you can't use yet (still earning trust): " + ", ".join(
             f"{m.name} (unlocks at L{m.min_level})" for m in locked)
+    feedback = task.get("feedback") or []
+    if feedback:
+        prompt += "\nA teammate reviewed an earlier attempt and sent it back. Address this feedback:\n" + "\n".join(
+            f"- {f['why']}" for f in feedback)
     out(f"🛠️  {team.guy} picks up #{task['id']}: {task['title']}")
     report.result = brain.run(
         persona_system(team, state), prompt, tools, max_steps(state.level),
@@ -177,14 +182,15 @@ def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = pr
     )
     if not report.summary:
         report.summary = report.result.text or f"Stopped ({report.result.stopped}) before finishing."
-    state.finish_task(task, report.status, report.summary)
-
     if report.status == "done":
-        xp = XP["task_done_per_effort"] * task["effort"] + XP["teamwork_per_member"] * len(report.crew_used)
-        report.awards.append(state.award("task_done", xp, f"Finished #{task['id']}: {task['title']}", task=task["id"]))
+        state.finish_task(task, "review", report.summary)
+        task["crew_used"] = list(report.crew_used)
+        report.awards.append(state.award(
+            "task_review", 0, f"Finished #{task['id']}: {task['title']} (awaiting review)", task=task["id"]))
         if "first-task" not in state.data["onboarding"]:
             report.awards.append(state.complete_quest("first-task", 50, "Shipped a first task"))  # type: ignore[arg-type]
     else:
+        state.finish_task(task, report.status, report.summary)
         report.awards.append(state.award("task_blocked", XP["task_blocked"], f"Blocked on #{task['id']}: {task['title']}", task=task["id"]))
     state.save()
     return report
