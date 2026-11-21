@@ -204,6 +204,49 @@ def test_offline_work_and_first_task_quest(team, state):
     assert State.load(team).xp == state.xp  # persisted
 
 
+def test_work_file_saves_deliverable_transcript_and_tokens(team, state):
+    graduate(state, 100)  # Intern: LLM crew unlocked
+    task = state.add_task("review the auth PR!", 2)
+    client = FakeClient([
+        NS(stop_reason="tool_use", usage=NS(input_tokens=100, output_tokens=10),
+           content=[tool_use("t1", "delegate", {"member": "reviewer", "instructions": "Review PR 42"})]),
+        NS(stop_reason="end_turn", usage=NS(input_tokens=50, output_tokens=20), content=[text("One missing test.")]),
+        NS(stop_reason="tool_use", usage=NS(input_tokens=200, output_tokens=5),
+           content=[tool_use("t2", "complete_task", {"outcome": "done", "summary": "Reviewed.", "effort": 2})]),
+        NS(stop_reason="end_turn", content=[text("Here are the review notes.")]),  # no usage: still fine
+    ])
+    report = work_on(team, state, ClaudeBrain(client=client), task, out=quiet)
+
+    path = team.state_dir / "work" / "1-review-the-auth-pr.md"
+    assert report.work_file == path and task["work_file"] == "work/1-review-the-auth-pr.md"
+    assert report.tokens == task["tokens"] == {"input": 350, "output": 35}
+    md = path.read_text()
+    assert "## Deliverable\n\nHere are the review notes." in md
+    assert "→ reviewer" in md and "> Review PR 42" in md and "> One missing test." in md
+    assert "total: 385" in md
+
+
+def test_offline_work_file_and_show(team, capsys, monkeypatch):
+    f = str(team.base_dir / "team.yaml")
+    monkeypatch.setenv("TEAMGUY_BRAIN", "offline")
+    assert main(["-f", f, "work", "write", "release", "notes", "for", "v2"]) == 0
+    assert "teamguy show 1" in capsys.readouterr().out
+    assert main(["-f", f, "show", "1"]) == 0
+    out = capsys.readouterr().out
+    assert "# #1: write release notes for v2" in out and "release-notes" in out
+    assert "free as in coffee" in out
+    assert main(["-f", f, "backlog", "add", "untouched"]) == 0
+    assert main(["-f", f, "show", "2"]) == 1
+    assert main(["-f", f, "show", "99"]) == 1
+
+
+def test_slugify():
+    from teamguy.work import slugify
+    assert slugify("Fix: the *build*  (again)") == "fix-the-build-again"
+    assert slugify("!!!") == "task"
+    assert len(slugify("word " * 30)) <= 40
+
+
 def test_xp_is_earned_on_accept_not_self_reported(team, state):
     graduate(state, 100)
     task = state.add_task("write release notes for v2", 2)

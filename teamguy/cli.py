@@ -67,6 +67,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("id", type=int)
     s.add_argument("why", nargs="+", help="what to fix; the next attempt sees it")
 
+    s = sub.add_parser("show", help="print a task's work file: deliverable, crew transcript, tokens")
+    s.add_argument("id", type=int)
+
     s = sub.add_parser("backlog", help="the guy's task list")
     bsub = s.add_subparsers(dest="backlog_cmd", metavar="<action>")
     b = bsub.add_parser("add", help="add a task")
@@ -132,7 +135,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(persona.today(team, args.date))
         elif args.cmd == "standup":
             return _standup(team, args)
-        elif args.cmd in ("work", "accept", "reject", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal"):
+        elif args.cmd in ("work", "accept", "reject", "show", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal"):
             return _teammate(team, args)
         elif args.cmd == "oncall":
             print(persona.oncall(team, args.date, max(1, args.weeks)))
@@ -303,6 +306,19 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(persona.c(f"   Try again: teamguy work {t['id']}", "dim"))
         return 0
 
+    if args.cmd == "show":
+        t = state.task(args.id)
+        if not t:
+            print(f"No task #{args.id}.", file=sys.stderr)
+            return 1
+        path = team.state_dir / t["work_file"] if t.get("work_file") else None
+        if not path or not path.exists():
+            print(f"#{t['id']} has no work file yet ({t['status']}). {team.guy} hasn't touched it. Try: teamguy work {t['id']}")
+            return 1
+        print(path.read_text(encoding="utf-8"))
+        print(persona.c(f"\n  📄 {path}", "dim"))
+        return 0
+
     if args.cmd == "backlog":
         if args.backlog_cmd == "add":
             t = state.add_task(" ".join(args.title), args.effort)
@@ -352,6 +368,8 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
     print(f"\n{verdict}: {report.summary}")
     if report.result and report.result.text and report.result.text != report.summary:
         print(persona.c("\n" + report.result.text, "dim"))
+    if report.work_file:
+        print(persona.c(f"\n   📄 Work saved to {report.work_file}  (teamguy show {task['id']})", "dim"))
     if report.status == "done":
         xp = State.task_xp(task)
         print(persona.c(f"\n   Worth +{xp} XP once you sign off: teamguy accept {task['id']}"

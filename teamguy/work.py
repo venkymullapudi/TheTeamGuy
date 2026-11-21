@@ -4,7 +4,9 @@ human runs `teamguy accept <id>` to grant the XP, or `teamguy reject <id>`."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .brain import RunResult, Tool
@@ -50,6 +52,9 @@ class WorkReport:
     followups: List[Dict[str, Any]] = field(default_factory=list)
     result: Optional[RunResult] = None
     awards: List[Award] = field(default_factory=list)
+    transcript: List[Dict[str, str]] = field(default_factory=list)
+    tokens: Dict[str, int] = field(default_factory=lambda: {"input": 0, "output": 0})
+    work_file: Optional[Path] = None
 
 
 def _schema(props: Dict[str, Any]) -> Dict[str, Any]:
@@ -74,7 +79,14 @@ def build_tools(team: Team, state: State, brain, report: WorkReport, out: Out) -
             member = team.member(inp["member"])
             assert member is not None
             out(f"   🤝 {team.guy} → {member.name}: {_short(inp['instructions'])}")
-            reply = run_member(member, inp["instructions"], brain, team)
+            entry = {"member": member.name, "asked": inp["instructions"], "reply": ""}
+            report.transcript.append(entry)
+            try:
+                reply = run_member(member, inp["instructions"], brain, team)
+            except Exception as exc:
+                entry["reply"] = f"(failed: {exc})"
+                raise
+            entry["reply"] = reply
             out(f"   ↩️  {member.name}: {_short(reply)}")
             if member.name not in report.crew_used:
                 report.crew_used.append(member.name)
@@ -176,10 +188,13 @@ def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = pr
         prompt += "\nA teammate reviewed an earlier attempt and sent it back. Address this feedback:\n" + "\n".join(
             f"- {f['why']}" for f in feedback)
     out(f"🛠️  {team.guy} picks up #{task['id']}: {task['title']}")
+    before = dict(getattr(brain, "usage", None) or {})
     report.result = brain.run(
         persona_system(team, state), prompt, tools, max_steps(state.level),
         plan=lambda: offline_plan(team, state, task),
     )
+    after = getattr(brain, "usage", None) or {}
+    report.tokens = {k: int(after.get(k, 0)) - int(before.get(k, 0)) for k in ("input", "output")}
     if not report.summary:
         report.summary = report.result.text or f"Stopped ({report.result.stopped}) before finishing."
     if report.status == "done":
@@ -192,8 +207,78 @@ def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = pr
     else:
         state.finish_task(task, report.status, report.summary)
         report.awards.append(state.award("task_blocked", XP["task_blocked"], f"Blocked on #{task['id']}: {task['title']}", task=task["id"]))
+    report.work_file = save_work_file(team, report)
+    task["work_file"] = str(report.work_file.relative_to(team.state_dir))
+    task["tokens"] = dict(report.tokens)
     state.save()
     return report
+
+
+def slugify(text: str, n: int = 40) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return slug[:n].rstrip("-") or "task"
+
+
+def work_file_path(team: Team, task: Dict[str, Any]) -> Path:
+    return team.state_dir / "work" / f"{task['id']}-{slugify(task['title'])}.md"
+
+
+def render_work_file(team: Team, report: WorkReport) -> str:
+    task = report.task
+    icon = {"review": "👀", "done": "✅", "blocked": "🧱"}.get(task["status"], "❔")
+    lines = [
+        f"# #{task['id']}: {task['title']}",
+        "",
+        f"{icon} **{task['status']}** · effort {task['effort']}/5 · from {task['source']} · "
+        f"worked by {team.guy} on {task.get('finished', '')[:16].replace('T', ' ')}",
+        "",
+        "## Deliverable",
+        "",
+        (report.result.text if report.result and report.result.text else "") or report.summary or "(nothing yet)",
+        "",
+        "## Summary",
+        "",
+        report.summary or "(none)",
+        "",
+    ]
+    feedback = task.get("feedback") or []
+    if feedback:
+        lines += ["## Review feedback addressed", ""] + [f"- {f['why']}" for f in feedback] + [""]
+    if report.skills_used:
+        lines += ["## Playbooks used", ""] + [f"- 📖 {s}" for s in report.skills_used] + [""]
+    lines += ["## Crew transcript", ""]
+    if not report.transcript:
+        lines += [f"_{team.guy} went solo on this one._", ""]
+    for i, entry in enumerate(report.transcript, 1):
+        lines += [
+            f"### {i}. 🤝 {team.guy} → {entry['member']}",
+            "",
+            "**Asked:**",
+            "",
+            _quote(entry["asked"]),
+            "",
+            "**Came back:**",
+            "",
+            _quote(entry["reply"]),
+            "",
+        ]
+    if report.followups:
+        lines += ["## Follow-ups filed", ""] + [f"- 📌 #{t['id']}: {t['title']}" for t in report.followups] + [""]
+    tin, tout = report.tokens.get("input", 0), report.tokens.get("output", 0)
+    note = "  (offline brain: free as in coffee ☕)" if not (tin or tout) else ""
+    lines += ["## Tokens", "", f"- in: {tin:,} · out: {tout:,} · total: {tin + tout:,}{note}", ""]
+    return "\n".join(lines)
+
+
+def save_work_file(team: Team, report: WorkReport) -> Path:
+    path = work_file_path(team, report.task)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_work_file(team, report), encoding="utf-8")
+    return path
+
+
+def _quote(text: str) -> str:
+    return "\n".join("> " + line for line in (text.strip() or "(empty)").splitlines())
 
 
 def _short(text: str, n: int = 110) -> str:

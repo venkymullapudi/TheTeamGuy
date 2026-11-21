@@ -50,6 +50,7 @@ teamguy onboard                                  # day one: quests, notes, +XP
 teamguy work "write release notes for v2.3"      # the guy gets it done, with the crew
 teamguy standup --join < updates.txt             # attends standup, volunteers for items
 teamguy work 3                                   # works a backlog item from standup
+teamguy show 3                                   # read the deliverable and crew transcript
 teamguy accept 3                                 # you sign off: the XP is paid out
 teamguy reject 3 "missing the rollback steps"    # back to todo; the retry sees your note
 teamguy level                                    # 🎒 L1 Intern  ███████░░░  220/300 XP
@@ -146,7 +147,10 @@ even for a blocked task (they learned something). Each level also gives the guy
 more model turns per task.
 
 State (XP, backlog, journal, notes) lives in `.teamguy/state.json` next to
-`team.yaml`.
+`team.yaml`. Every task also gets a work file at
+`.teamguy/work/<id>-<slug>.md` with the final deliverable, the crew transcript
+(who was asked what, and what came back) and the tokens it took. Read it with
+`teamguy show <id>` before you accept or reject.
 
 ## Summon your guy
 
@@ -167,6 +171,7 @@ teamguy init SIM
 | `teamguy onboard [--status]`| Run the onboarding quests                                       |
 | `teamguy work "<task>"`     | Do a task (or `work <id>` from the backlog, `--next` at Staff+) |
 | `teamguy standup [--join]`  | Preview the update, or attend and volunteer for action items    |
+| `teamguy show <id>`         | The task's work file: deliverable, crew transcript, tokens      |
 | `teamguy accept <id>`       | Sign off on finished work and grant the XP                      |
 | `teamguy reject <id> "why"` | Send it back to todo with feedback for the next attempt         |
 | `teamguy backlog [add/drop]`| The guy's task list                                             |

@@ -91,6 +91,9 @@ class OfflineBrain:
 
     name = "offline"
 
+    def __init__(self) -> None:
+        self.usage: Dict[str, int] = {"input": 0, "output": 0}  # free, always
+
     def run(self, system: str, prompt: str, tools: List[Tool], max_steps: int, plan: Optional[Plan] = None) -> RunResult:
         by_name = {t.name: t for t in tools}
         calls = plan() if plan else []
@@ -123,6 +126,14 @@ class ClaudeBrain:
                 ) from None
             client = anthropic.Anthropic()
         self.client = client
+        self.usage: Dict[str, int] = {"input": 0, "output": 0}
+
+    def _count(self, response: Any) -> None:
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return
+        self.usage["input"] += int(getattr(usage, "input_tokens", 0) or 0)
+        self.usage["output"] += int(getattr(usage, "output_tokens", 0) or 0)
 
     def _create(self, model: Optional[str] = None, **kwargs: Any) -> Any:
         try:
@@ -130,13 +141,15 @@ class ClaudeBrain:
         except ImportError:  # fake clients in tests
             anthropic = None  # type: ignore[assignment]
         try:
-            return self.client.beta.messages.create(
+            response = self.client.beta.messages.create(
                 model=model or self.model,
                 max_tokens=16000,
                 betas=[FALLBACK_BETA],
                 fallbacks="default",
                 **kwargs,
             )
+            self._count(response)
+            return response
         except Exception as exc:
             if anthropic is None or not isinstance(exc, anthropic.AnthropicError):
                 raise

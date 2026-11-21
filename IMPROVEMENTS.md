@@ -12,10 +12,6 @@ nobody has answered yet. Change them here if you disagree.
 
 ## Now
 
-- [ ] **Deliverables are saved** *(default: work files)*. Each task writes
-  `.teamguy/work/<id>-<slug>.md`: the final deliverable, the crew transcript
-  (who was asked what, what came back), and tokens used. `teamguy show <id>`
-  prints it.
 - [ ] **Token budget** *(default: per-task budget that grows with level)*. Count
   input/output tokens across the guy's own calls and his LLM crew calls, report
   them per task, and stop gracefully when a task goes past
@@ -45,3 +41,5 @@ nobody has answered yet. Change them here if you disagree.
   (a standup for another date no longer pays out twice; fixed the red baseline).
 - [x] Earned XP: finished tasks go to 👀 review; `teamguy accept <id>` pays the
   XP, `teamguy reject <id> "why"` sends it back with feedback the retry sees.
+- [x] Deliverables are saved: each task writes `.teamguy/work/<id>-<slug>.md`
+  (deliverable, crew transcript, tokens); `teamguy show <id>` prints it.
