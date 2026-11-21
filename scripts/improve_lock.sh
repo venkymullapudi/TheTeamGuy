@@ -1,47 +1,69 @@
 #!/usr/bin/env bash
-# One improvement run at a time, across every Claude session on this machine.
+# One improvement run at a time, across every Claude session anywhere:
+# cloud routines and local sessions all take the same lock on GitHub.
 #
 #   scripts/improve_lock.sh acquire <owner>   exit 0 = got it, exit 1 = busy
 #   scripts/improve_lock.sh release <owner>
 #   scripts/improve_lock.sh status
 #
-# The lock is a directory in .git/ (mkdir is atomic; nothing gets committed).
-# A lock older than STALE_MINUTES (default 180) is treated as abandoned.
+# The lock is the branch `teamguy-loop-lock` on origin, pointing at a one-off
+# orphan commit. Creating it is atomic: if another run holds it, our push is
+# rejected (our orphan commit is never a fast-forward of theirs). A lock older
+# than STALE_MINUTES (default 180) is treated as abandoned and taken over.
 set -euo pipefail
 
-root="$(git rev-parse --show-toplevel)"
-lock="$root/.git/teamguy-improve.lock"
+ref="teamguy-loop-lock"
 stale_minutes="${STALE_MINUTES:-180}"
 cmd="${1:-status}"
 owner="${2:-unknown}"
 
-info() { [ -f "$lock/owner" ] && cat "$lock/owner" || echo "?"; }
+remote_sha() { git ls-remote origin "refs/heads/$ref" | cut -f1; }
+
+holder() {  # prints "<owner> since <iso time>" for the current lock commit
+  local sha="$1"
+  git fetch -q origin "refs/heads/$ref" 2>/dev/null || true
+  git log -1 --format='%s since %cI' "$sha" 2>/dev/null | sed 's/^lock: //' || echo "?"
+}
+
+age_minutes() {
+  local sha="$1" then now
+  git fetch -q origin "refs/heads/$ref" 2>/dev/null || true
+  then="$(git log -1 --format=%ct "$sha" 2>/dev/null || echo 0)"
+  now="$(date +%s)"
+  echo $(( (now - then) / 60 ))
+}
 
 case "$cmd" in
   acquire)
-    if mkdir "$lock" 2>/dev/null; then
-      printf '%s since %s\n' "$owner" "$(date '+%Y-%m-%d %H:%M:%S')" > "$lock/owner"
+    tree="$(git hash-object -t tree /dev/null)"
+    commit="$(git commit-tree "$tree" -m "lock: $owner")"
+    if git push -q origin "$commit:refs/heads/$ref" 2>/dev/null; then
       echo "acquired by $owner"
       exit 0
     fi
-    if [ -n "$(find "$lock" -maxdepth 0 -mmin +"$stale_minutes" 2>/dev/null)" ]; then
-      echo "stale lock ($(info)), taking over"
-      rm -rf "$lock"
-      exec "$0" acquire "$owner"
+    sha="$(remote_sha)"
+    if [ -n "$sha" ] && [ "$(age_minutes "$sha")" -ge "$stale_minutes" ]; then
+      echo "stale lock ($(holder "$sha")), taking over"
+      git push -q origin --force-with-lease="refs/heads/$ref:$sha" "$commit:refs/heads/$ref" && {
+        echo "acquired by $owner"; exit 0; }
     fi
-    echo "busy: $(info)"
+    echo "busy: $( [ -n "$sha" ] && holder "$sha" || echo '?')"
     exit 1
     ;;
   release)
-    if [ -d "$lock" ] && grep -q "^$owner since" "$lock/owner" 2>/dev/null; then
-      rm -rf "$lock"
+    sha="$(remote_sha)"
+    if [ -z "$sha" ]; then
+      echo "free already"
+    elif [ "$(holder "$sha" | cut -d' ' -f1)" = "$owner" ]; then
+      git push -q origin --force-with-lease="refs/heads/$ref:$sha" --delete "$ref"
       echo "released by $owner"
     else
-      echo "not held by $owner (holder: $(info)); leaving it"
+      echo "not held by $owner (holder: $(holder "$sha")); leaving it"
     fi
     ;;
   status)
-    [ -d "$lock" ] && echo "held: $(info)" || echo "free"
+    sha="$(remote_sha)"
+    [ -n "$sha" ] && echo "held: $(holder "$sha")" || echo "free"
     ;;
   *)
     echo "usage: $0 acquire|release <owner> | status" >&2

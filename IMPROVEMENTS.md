@@ -1,6 +1,8 @@
 # Improvement roadmap
 
-The improvement loop works through this list top to bottom, one item per run.
+The improvement loop (a cloud routine, every 3 hours) works through this list
+top to bottom, one item per run. Only one run works at a time: every run, cloud
+or local, takes the `teamguy-loop-lock` branch via `scripts/improve_lock.sh`.
 Each run implements an item with tests, ticks the box, commits and pushes to
 `main`. Edit freely: reorder, add or delete items, and the loop follows.
 
