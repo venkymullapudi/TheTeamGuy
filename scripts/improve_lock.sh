@@ -2,7 +2,7 @@
 # One improvement run at a time, across every Claude session anywhere:
 # cloud routines and local sessions all take the same lock on GitHub.
 #
-#   scripts/improve_lock.sh acquire <owner>   exit 0 = got it, exit 1 = busy
+#   scripts/improve_lock.sh acquire <owner>   exit 0 = got it, 1 = busy, 3 = can't push
 #   scripts/improve_lock.sh release <owner>
 #   scripts/improve_lock.sh status
 #
@@ -17,7 +17,7 @@ stale_minutes="${STALE_MINUTES:-180}"
 cmd="${1:-status}"
 owner="${2:-unknown}"
 
-remote_sha() { git ls-remote origin "refs/heads/$ref" | cut -f1; }
+remote_sha() { git ls-remote origin "refs/heads/$ref" 2>/dev/null | cut -f1 || true; }
 
 holder() {  # prints "<owner> since <iso time>" for the current lock commit
   local sha="$1"
@@ -37,11 +37,16 @@ case "$cmd" in
   acquire)
     tree="$(git hash-object -t tree /dev/null)"
     commit="$(git commit-tree "$tree" -m "lock: $owner")"
-    if git push -q origin "$commit:refs/heads/$ref" 2>/dev/null; then
+    if push_err="$(git push -q origin "$commit:refs/heads/$ref" 2>&1)"; then
       echo "acquired by $owner"
       exit 0
     fi
     sha="$(remote_sha)"
+    if [ -z "$sha" ]; then  # nobody holds it, so the push failed for another reason
+      echo "error: couldn't push the lock branch (no push access?):" >&2
+      echo "$push_err" | sed 's/^/  /' >&2
+      exit 3
+    fi
     if [ -n "$sha" ] && [ "$(age_minutes "$sha")" -ge "$stale_minutes" ]; then
       echo "stale lock ($(holder "$sha")), taking over"
       git push -q origin --force-with-lease="refs/heads/$ref:$sha" "$commit:refs/heads/$ref" && {
