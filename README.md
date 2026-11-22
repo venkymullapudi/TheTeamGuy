@@ -175,6 +175,18 @@ XP: **20 × effort** per accepted task, **+5** per crew member worked with,
 even for a blocked task (they learned something). Each level also gives the guy
 more model turns per task.
 
+### Streaks and achievements 🔥
+
+`teamguy level` also shows bragging rights, all worked out from the journal:
+
+- **Standup streak**: consecutive workdays with a standup (weekends don't break
+  it; a missed workday does), plus his best ever.
+- **🔥 On fire**: 5+ tasks accepted in the last 7 days.
+- **Achievements**: 🚢 First Ship, 🥊 Comeback Kid (accepted after a reject),
+  🧑‍✈️ Crew Chief (3+ crew on one task), ☕ Regular (5-standup streak),
+  💌 Fan Favorite (3 kudos), 🏭 Shipyard (10 accepted). `accept` and `kudos`
+  announce new ones the moment they unlock.
+
 State (XP, backlog, journal, notes) lives in `.teamguy/state.json` next to
 `team.yaml`. Every task also gets a work file at
 `.teamguy/work/<id>-<slug>.md` with the final deliverable, the crew transcript
@@ -214,7 +226,7 @@ teamguy init SIM
 | `teamguy accept <id>`       | Sign off on finished work and grant the XP                      |
 | `teamguy reject <id> "why"` | Send it back to todo with feedback for the next attempt         |
 | `teamguy backlog [add/drop]`| The guy's task list                                             |
-| `teamguy level`             | XP, level, and what unlocks next                                |
+| `teamguy level`             | XP, level, what unlocks next, streaks and achievements          |
 | `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |
 | `teamguy kudos "<msg>"`     | Say thanks                                                      |
 | `teamguy journal`           | Recent contributions                                            |

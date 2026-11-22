@@ -495,3 +495,54 @@ def test_zero_budget_means_no_limit_and_offline_reports_it(team, state):
     report = work_on(team, state, OfflineBrain(), state.add_task("write release notes", 1), out=quiet)
     assert report.budget == 0 and report.status == "done"
     assert "no limit (living dangerously)" in report.work_file.read_text()
+
+
+# ─── streaks & achievements ──────────────────────────────────────────────────
+
+
+def _standup_on(state, day):
+    state.award("standup", 10, f"Joined standup on {day}", day=day.isoformat())
+
+
+def test_standup_streak_skips_weekends_and_breaks_on_a_gap(state):
+    from teamguy import fun
+
+    mon = dt.date(2026, 11, 16)
+    for d in range(5):  # Mon..Fri
+        _standup_on(state, mon + dt.timedelta(days=d))
+    next_mon = mon + dt.timedelta(days=7)
+    _standup_on(state, next_mon)
+    assert fun.standup_streak(state, next_mon) == 6  # the weekend doesn't count against him
+    assert fun.standup_streak(state, next_mon + dt.timedelta(days=1)) == 6  # still alive on Tuesday
+    assert fun.standup_streak(state, next_mon + dt.timedelta(days=2)) == 0  # missed Tuesday: broken
+    assert fun.best_streak(state) == 6
+    assert "best 6" in fun.streak_line(state, next_mon + dt.timedelta(days=3))
+    assert "none yet" in fun.streak_line(State(state.path), FRI)
+
+
+def test_on_fire_and_achievements(state):
+    from teamguy import fun
+
+    assert fun.unlocked(state) == []
+    today = dt.date(2026, 11, 22)
+    for i in range(5):
+        t = state.add_task(f"ship {i}")
+        t.update(status="done", accepted=f"2026-11-2{i % 3}T10:00:00", crew_used=["a", "b", "c"] if i == 0 else [])
+    state.tasks[1]["feedback"] = [{"at": "x", "why": "more tests"}]
+    assert fun.on_fire(state, today)
+    assert not fun.on_fire(state, today + dt.timedelta(days=10))
+    keys = {a.key for a in fun.unlocked(state)}
+    assert {"first-ship", "comeback-kid", "crew-chief"} <= keys
+    assert "regular" not in keys and "ten-ships" not in keys
+    assert "ON FIRE" in fun.streak_line(state, today)
+
+
+def test_level_shows_achievements_and_kudos_unlocks_one(team, capsys):
+    f = str(team.base_dir / "team.yaml")
+    for _ in range(3):
+        assert main(["-f", f, "kudos", "nice"]) == 0
+    out = capsys.readouterr().out
+    assert out.count("Achievement unlocked") == 1 and "Fan Favorite" in out
+    assert main(["-f", f, "level"]) == 0
+    out = capsys.readouterr().out
+    assert "Achievements (1/" in out and "Standup streak" in out and "🔒 First Ship" in out

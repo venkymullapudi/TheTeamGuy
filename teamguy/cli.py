@@ -185,6 +185,14 @@ def _announce(team: Team, awards: List[Optional[Award]]) -> None:
             print(persona.level_up(team, a.after))
 
 
+def _new_achievements(state: State, had: set) -> None:
+    from . import fun
+
+    for a in fun.unlocked(state):
+        if a.key not in had:
+            print(persona.c(f"🏆 Achievement unlocked: {a.emoji} {a.title}. {a.blurb}", "bold", "magenta"))
+
+
 def _standup(team: Team, args: argparse.Namespace) -> int:
     from .meeting import inbox_path, join_standup, parse_updates, render_update
 
@@ -226,6 +234,7 @@ def _standup(team: Team, args: argparse.Namespace) -> int:
 
 
 def _teammate(team: Team, args: argparse.Namespace) -> int:
+    from . import fun
     from .crew import available, load_skills
     from .onboarding import quest_status, run_onboarding
     from .work import budget_line, work_on
@@ -243,7 +252,16 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(persona.c("  🔒 Finish onboarding (`teamguy onboard`) to leave New Hire.", "yellow"))
         elif nxt:
             print(persona.c(f"  Next: L{nxt.number} {nxt.name(team.guy)} → {nxt.perk_for(team.guy)}", "dim"))
-        print(f"\n  Tasks shipped: {done}   Standups: {standups}   Open tasks: {open_}\n")
+        print(f"\n  Tasks shipped: {done}   Standups: {standups}   Open tasks: {open_}")
+        print(fun.streak_line(state))
+        got = {a.key for a in fun.unlocked(state)}
+        print(persona.c(f"\n  Achievements ({len(got)}/{len(fun.ACHIEVEMENTS)})", "bold"))
+        for a in fun.ACHIEVEMENTS:
+            if a.key in got:
+                print(f"  {a.emoji} {a.title:<14} {persona.c(a.blurb, 'dim')}")
+            else:
+                print(persona.c(f"  🔒 {a.title:<14} {a.blurb}", "dim"))
+        print()
         for l in LADDER:
             mark = "▶" if l.number == lvl.number else ("✓" if l.number < lvl.number else " ")
             print(persona.c(f"  {mark} {l.badge} L{l.number} {l.name(team.guy):<26} {l.xp:>6} XP", "bold" if mark == "▶" else "dim"))
@@ -288,10 +306,12 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
 
     if args.cmd == "kudos":
         msg = " ".join(args.message) or "Great job!"
+        had = {a.key for a in fun.unlocked(state)}
         award = state.award("kudos", XP["kudos"], f"Kudos: {msg}")
         state.save()
         print(f"🥹 {team.guy}: Thank you! That means a lot. (Saving this one for my promo packet.)")
         _announce(team, [award])
+        _new_achievements(state, had)
         return 0
 
     if args.cmd == "journal":
@@ -311,10 +331,14 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(f"#{t['id']} isn't waiting for review (it's {t['status']}).", file=sys.stderr)
             return 1
         if args.cmd == "accept":
+            had = {a.key for a in fun.unlocked(state)}
             award = state.accept_task(t)
             state.save()
             print(f"🚢 #{t['id']} accepted! {team.guy}: \"Reviewed by a real human. Framing this.\"")
             _announce(team, [award])
+            _new_achievements(state, had)
+            if fun.on_fire(state):
+                print(persona.c("🔥 On fire this week. `teamguy level` for the receipts.", "bold", "yellow"))
         else:
             why = " ".join(args.why)
             state.reject_task(t, why)

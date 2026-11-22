@@ -16,8 +16,12 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] **Streaks and fun**: a standup streak, a "🔥 on fire" badge for a week of
-  accepted work, and an achievement or two in `teamguy level`.
+- [ ] **Weekly recap**: `teamguy recap` prints the last 7 days (tasks accepted,
+  XP, streak, new achievements) as a short, pasteable post for the team channel.
+- [ ] **Brag at standup**: the guy's standup update mentions his streak and any
+  achievement unlocked since the last standup (one line, no gloating... much).
+- [ ] **Backlog bump**: `teamguy backlog bump <id>` moves a task to the top so
+  `work --next` picks it first.
 
 ## Done
 
@@ -44,3 +48,6 @@ _(empty: the loop takes from Next)_
   with the Claude brain in a temp dir; skips (exit 0) with no SDK or no
   API key/auth token in the env (OAuth tokens don't count), `TEAMGUY_SMOKE_FORCE=1`
   overrides, `KEEP=1` keeps the folder. Tests cover the skip paths with a fake binary.
+- [x] Streaks and fun: `teamguy level` shows a workday standup streak (and best),
+  a 🔥 on-fire badge (5+ tasks accepted in 7 days) and six achievements derived
+  from the journal; `accept` and `kudos` announce newly unlocked ones.
