@@ -582,3 +582,40 @@ def test_recap_quiet_week_and_cli(team, capsys):
     assert "nothing accepted" in out and "Quiet week" in out
     assert main(["-f", str(team.base_dir / "team.yaml"), "recap", "--days", "3"]) == 0
     assert "week in review" in capsys.readouterr().out
+
+
+# ─── standup brag ────────────────────────────────────────────────────────────
+
+
+def test_standup_brags_about_streak_and_new_achievements(team, state):
+    from teamguy import fun
+
+    def stood_up(day):
+        state.data["log"].append({"at": f"{day}T09:30:00", "kind": "standup", "xp": 10,
+                                  "summary": "standup", "day": day.isoformat()})
+
+    mon = dt.date(2026, 11, 16)
+    assert fun.brag_line(state, mon) == ""  # first standup, nothing to brag about
+    assert "Brag:" not in render_update(team, state, mon)
+    stood_up(mon)
+    t = state.add_task("ship it")
+    t.update(status="done", accepted="2026-11-16T15:00:00")
+    state.data["log"].append({"at": "2026-11-16T15:00:00", "kind": "task_done", "xp": 20, "summary": "shipped"})
+
+    tue = mon + dt.timedelta(days=1)
+    line = fun.brag_line(state, tue)
+    assert "2 standups in a row" in line and "🚢 First Ship" in line
+    assert line in render_update(team, state, tue)
+
+    stood_up(tue)
+    wed = tue + dt.timedelta(days=1)
+    line = fun.brag_line(state, wed)
+    assert "3 standups in a row" in line and "First Ship" not in line  # already bragged on Tuesday
+
+    for d in (wed, wed + dt.timedelta(days=1)):
+        stood_up(d)
+    fri = mon + dt.timedelta(days=4)
+    line = fun.brag_line(state, fri)
+    assert "🔥 5 standups in a row" in line and "☕ Regular" in line  # today's standup unlocks it
+    stood_up(fri)
+    assert "Regular" not in fun.brag_line(state, mon + dt.timedelta(days=7))

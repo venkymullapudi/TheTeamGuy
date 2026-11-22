@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Tuple
 
 from .brain import Tool
 from .config import Team
+from .fun import brag_line
 from .levels import XP
 from .state import Award, State
 from .work import Out, persona_system
@@ -50,6 +51,9 @@ def render_update(team: Team, state: State, day: dt.date) -> str:
     lines += [f"  • {x}" for x in u["today"]] or ["  • Looking for something useful to pick up. Throw me a task!"]
     lines.append("Blockers:")
     lines += [f"  • {x}" for x in u["blockers"]] or ["  • None 🎉"]
+    brag = brag_line(state, day)
+    if brag:
+        lines.append(brag)
     return "\n".join(lines)
 
 

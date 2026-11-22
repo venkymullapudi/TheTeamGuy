@@ -16,8 +16,6 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] **Brag at standup**: the guy's standup update mentions his streak and any
-  achievement unlocked since the last standup (one line, no gloating... much).
 - [ ] **Backlog bump**: `teamguy backlog bump <id>` moves a task to the top so
   `work --next` picks it first.
 
@@ -52,3 +50,6 @@ _(empty: the loop takes from Next)_
 - [x] Weekly recap: `teamguy recap` prints a pasteable, colorless week in review
   (accepted tasks, XP, standups and streak, kudos, achievements new this week,
   tasks waiting for review); `--days` and `--date` move the window.
+- [x] Brag at standup: the standup update ends with a one-line brag (streak this
+  standup makes, achievements unlocked since the last standup, each bragged once);
+  `fun.as_of` now also takes an ISO timestamp cutoff.

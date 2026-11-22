@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import datetime as dt
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Set
+from typing import Callable, Dict, List, Optional, Set, Union
 
 from .state import State
 
@@ -117,18 +117,18 @@ def streak_line(state: State, today: Optional[dt.date] = None) -> str:
 RECAP_DAYS = 7
 
 
-def as_of(state: State, cutoff: dt.date) -> State:
+def as_of(state: State, cutoff: Union[dt.date, str]) -> State:
     """The guy's state as it stood before `cutoff`: later log entries are dropped
     and tasks accepted on or after it are back in review. Used to tell which
     achievements are new this week."""
-    iso = cutoff.isoformat()
+    iso = cutoff if isinstance(cutoff, str) else cutoff.isoformat()  # a date or an ISO timestamp
     tasks = []
     for t in state.tasks:
         t = dict(t)
-        if t["status"] == "done" and t.get("accepted", "")[:10] >= iso:
+        if t["status"] == "done" and t.get("accepted", "") >= iso:
             t["status"] = "review"
         tasks.append(t)
-    log = [e for e in state.data["log"] if e["at"][:10] < iso and e.get("day", e["at"][:10]) < iso]
+    log = [e for e in state.data["log"] if e["at"] < iso and e.get("day", e["at"][:10]) < iso]
     return State(state.path, {**state.data, "tasks": tasks, "log": log})
 
 
@@ -168,3 +168,41 @@ def recap(guy: str, state: State, today: Optional[dt.date] = None, days: int = R
         lines.append("")
         lines.append("Quiet week. He was definitely thinking very hard the whole time.")
     return "\n".join(lines)
+
+
+# ─── standup brag ────────────────────────────────────────────────────────────
+
+
+def _with_standup(state: State, day: dt.date) -> State:
+    """The state as if he's at today's standup (the update is what he says there)."""
+    if day in standup_days(state):
+        return state
+    entry = {"at": f"{day.isoformat()}T09:00:00", "kind": "standup", "xp": 0, "summary": "standup", "day": day.isoformat()}
+    return State(state.path, {**state.data, "log": state.data["log"] + [entry]})
+
+
+def brag_line(state: State, day: Optional[dt.date] = None) -> str:
+    """One humble-ish line for the standup update: the streak this standup makes,
+    plus achievements unlocked since the last standup. Empty when there's
+    nothing to brag about."""
+    day = day or dt.date.today()
+    now = _with_standup(state, day)
+    streak = standup_streak(now, day)
+    earlier = sorted(
+        (dt.date.fromisoformat(e.get("day", e["at"][:10])), e["at"]) for e in state.data["log"]
+        if e["kind"] == "standup" and e.get("day", e["at"][:10]) < day.isoformat()
+    )
+    before: Set[str] = set()
+    if earlier:  # what he had right when he last stood up (that standup included)
+        last_day, last_at = earlier[-1]
+        before = {a.key for a in unlocked(_with_standup(as_of(state, last_at), last_day))}
+    new = [a for a in unlocked(now) if a.key not in before]
+    bits = []
+    if streak >= 2:
+        bits.append(f"{'🔥' if streak >= 5 else '☕'} {streak} standups in a row")
+    if new:
+        bits.append("🏆 unlocked " + ", ".join(f"{a.emoji} {a.title}" for a in new))
+    if not bits:
+        return ""
+    tail = " Not that I'm counting." if len(bits) == 1 else " Okay, I'm counting."
+    return "Brag: " + " · ".join(bits) + "." + tail

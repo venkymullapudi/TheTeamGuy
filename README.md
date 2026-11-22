@@ -152,6 +152,10 @@ action items on the backlog. Notes are saved to `.teamguy/standups/`.
 `--keep-inbox` to leave it alone. With no file and an empty inbox, updates come
 from stdin. The preview (`teamguy standup`) tells you who's already checked in.
 
+😎 **Standup brag**: when there's something to brag about, the update ends with
+one line: the streak this standup makes (2+ in a row) and any achievement
+unlocked since the last standup. Each achievement gets bragged about once.
+
 ### 📈 Levels
 
 | Level | Title                   | XP     | Unlocks                                            |
