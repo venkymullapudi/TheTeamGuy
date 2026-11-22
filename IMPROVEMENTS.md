@@ -12,15 +12,12 @@ nobody has answered yet. Change them here if you disagree.
 
 ## Now
 
-- [ ] **Standup inbox**: `teamguy standup --join` reads
-  `.teamguy/standups/inbox.md` by default, then clears it, so teammates can drop
-  updates in asynchronously.
-
-## Next
-
 - [ ] **Live smoke test**: `scripts/live_smoke.sh` runs onboard → work →
   standup with the Claude brain in a temp dir and skips cleanly when there are
   no credentials.
+
+## Next
+
 - [ ] **Streaks and fun**: a standup streak, a "🔥 on fire" badge for a week of
   accepted work, and an achievement or two in `teamguy level`.
 
@@ -42,3 +39,6 @@ nobody has answered yet. Change them here if you disagree.
 - [x] Claude Code crew args: `claude-code` members take `args:` (default
   `--permission-mode acceptEdits`), the task now goes on stdin instead of argv,
   `teamguy crew` shows the args, and the README explains the permission trade-offs.
+- [x] Standup inbox: `--join` reads `.teamguy/standups/inbox.md` when no
+  `--updates` file is given, clears it afterwards (`--keep-inbox` to keep), and
+  the preview shows who has already checked in.

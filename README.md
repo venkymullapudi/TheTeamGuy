@@ -49,6 +49,7 @@ teamguy --brain offline onboard     # or: export TEAMGUY_BRAIN=offline
 teamguy onboard                                  # day one: quests, notes, +XP
 teamguy work "write release notes for v2.3"      # the guy gets it done, with the crew
 teamguy standup --join < updates.txt             # attends standup, volunteers for items
+echo 'Sam: stuck on CI' >> .teamguy/standups/inbox.md  # async update for the next standup
 teamguy work 3                                   # works a backlog item from standup
 teamguy show 3                                   # read the deliverable and crew transcript
 teamguy accept 3                                 # you sign off: the XP is paid out
@@ -142,9 +143,14 @@ playbooks the guy opens and follows: `release-notes`, `postmortem`,
 
 `teamguy standup` previews the guy's update, built from what they actually did
 since the last workday. `teamguy standup --join` attends: it reads teammates'
-updates (`Name: update` per line, from `--updates FILE` or stdin), offers help
-where it fits, and puts those action items on the backlog. Notes are saved to
-`.teamguy/standups/`.
+updates (`Name: update` per line), offers help where it fits, and puts those
+action items on the backlog. Notes are saved to `.teamguy/standups/`.
+
+📬 **Standup inbox**: can't make the meeting? Drop your `Name: update` line in
+`.teamguy/standups/inbox.md` any time. `--join` reads it (unless you pass
+`--updates FILE`, which wins), then clears it so tomorrow starts fresh; add
+`--keep-inbox` to leave it alone. With no file and an empty inbox, updates come
+from stdin. The preview (`teamguy standup`) tells you who's already checked in.
 
 ### 📈 Levels
 

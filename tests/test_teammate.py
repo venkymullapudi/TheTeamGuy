@@ -389,6 +389,41 @@ def test_cli_teammate_flow(team, capsys, monkeypatch):
     assert "Help Alex" in capsys.readouterr().out
 
 
+def test_standup_reads_and_clears_the_inbox(team, capsys, monkeypatch):
+    f = str(team.base_dir / "team.yaml")
+    monkeypatch.setenv("TEAMGUY_BRAIN", "offline")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    inbox = team.state_dir / "standups" / "inbox.md"
+    inbox.parent.mkdir(parents=True)
+    inbox.write_text("Sam: stuck on a flaky test\nPriya: shipped the dashboard\n")
+    assert run("standup") == 0
+    assert "2 update(s) waiting" in capsys.readouterr().out
+    assert inbox.read_text() != ""  # a preview never eats the inbox
+    assert run("standup", "--join") == 0
+    out = capsys.readouterr().out
+    assert "Help Sam" in out and "Inbox cleared" in out
+    assert inbox.read_text() == ""
+    assert "Priya: shipped" in (team.state_dir / "standups" / f"{dt.date.today().isoformat()}.md").read_text()
+
+
+def test_standup_updates_flag_beats_inbox_and_keep_inbox(team, capsys, monkeypatch):
+    f = str(team.base_dir / "team.yaml")
+    monkeypatch.setenv("TEAMGUY_BRAIN", "offline")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    inbox = team.state_dir / "standups" / "inbox.md"
+    inbox.parent.mkdir(parents=True)
+    inbox.write_text("Sam: need a review\n")
+    updates = team.base_dir / "updates.txt"
+    updates.write_text("Alex: blocked on docs\n")
+    assert run("standup", "--join", "--updates", str(updates)) == 0
+    out = capsys.readouterr().out
+    assert "Help Alex" in out and "Help Sam" not in out
+    assert inbox.read_text() == "Sam: need a review\n"  # untouched
+    assert run("standup", "--join", "--keep-inbox") == 0
+    assert "Help Sam" in capsys.readouterr().out
+    assert inbox.read_text() == "Sam: need a review\n"
+
+
 def test_oauth_token_in_api_key_gets_a_clear_error(monkeypatch):
     anthropic = pytest.importorskip("anthropic")
     import httpx2

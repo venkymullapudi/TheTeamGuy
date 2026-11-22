@@ -6,6 +6,7 @@ from __future__ import annotations
 import datetime as dt
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from .brain import Tool
@@ -50,6 +51,11 @@ def render_update(team: Team, state: State, day: dt.date) -> str:
     lines.append("Blockers:")
     lines += [f"  • {x}" for x in u["blockers"]] or ["  • None 🎉"]
     return "\n".join(lines)
+
+
+def inbox_path(team: Team) -> Path:
+    """Where teammates drop async 'Name: update' lines before standup."""
+    return team.state_dir / "standups" / "inbox.md"
 
 
 def parse_updates(text: str) -> List[Tuple[str, str]]:

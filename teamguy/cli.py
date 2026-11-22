@@ -54,7 +54,9 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("standup", help="the guy's standup update; --join to attend with the team")
     s.add_argument("--date", type=_date, default=dt.date.today())
     s.add_argument("--join", action="store_true", help="attend: hear teammates' updates and volunteer for action items")
-    s.add_argument("--updates", type=Path, help="file of 'Name: update' lines (default: read stdin)")
+    s.add_argument("--updates", type=Path,
+                   help="file of 'Name: update' lines (default: .teamguy/standups/inbox.md if it has any, else stdin)")
+    s.add_argument("--keep-inbox", action="store_true", help="don't clear the inbox after reading it")
 
     s = sub.add_parser("work", help="give the guy a task (text or backlog #id) and watch them get it done")
     s.add_argument("task", nargs="*", help='e.g. "write release notes for v2.3" or 4')
@@ -184,15 +186,25 @@ def _announce(team: Team, awards: List[Optional[Award]]) -> None:
 
 
 def _standup(team: Team, args: argparse.Namespace) -> int:
-    from .meeting import join_standup, parse_updates, render_update
+    from .meeting import inbox_path, join_standup, parse_updates, render_update
 
     state = State.load(team)
+    inbox = inbox_path(team)
+    waiting = parse_updates(inbox.read_text(encoding="utf-8")) if inbox.is_file() else []
     if not args.join:
         print(render_update(team, state, args.date))
+        if waiting:
+            print(persona.c(f"\n  📬 {len(waiting)} update(s) waiting in the inbox from "
+                            f"{', '.join(sorted({n for n, _ in waiting}))}.", "dim"))
         print(persona.c("\n  (Preview. `teamguy standup --join` to actually attend.)", "dim"))
         return 0
+    from_inbox = False
     if args.updates:
         text = args.updates.read_text(encoding="utf-8")
+    elif waiting:
+        text = inbox.read_text(encoding="utf-8")
+        from_inbox = True
+        print(persona.c(f"📬 {len(waiting)} update(s) from the inbox. The async crowd has spoken.", "dim"))
     elif sys.stdin.isatty():
         print("Teammates, go! One 'Name: update' per line, blank line to finish.")
         lines = []
@@ -206,6 +218,9 @@ def _standup(team: Team, args: argparse.Namespace) -> int:
     print()
     print(report.reply)
     print(persona.c(f"\n  📝 Notes saved to {report.notes_path}", "dim"))
+    if from_inbox and not args.keep_inbox:
+        inbox.write_text("", encoding="utf-8")
+        print(persona.c(f"  📭 Inbox cleared ({inbox}). Fresh for tomorrow.", "dim"))
     _announce(team, report.awards)
     return 0
 
