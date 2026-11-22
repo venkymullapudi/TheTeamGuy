@@ -76,6 +76,7 @@ class CrewMember:
     system: str = ""
     command: List[str] = field(default_factory=list)
     timeout: int = 600
+    args: List[str] = field(default_factory=list)  # claude-code only: extra CLI flags
 
 
 @dataclass
@@ -250,6 +251,7 @@ def _parse_crew(items: Any) -> List[CrewMember]:
             raise TeamConfigError(f"crew {name!r}: command must be a list like [pytest, -q], not a shell string.")
         if kind == "command" and not command:
             raise TeamConfigError(f"crew {name!r}: kind 'command' needs a command list.")
+        args = _parse_crew_args(name, kind, m.get("args"))
         crew.append(
             CrewMember(
                 name=name,
@@ -260,9 +262,32 @@ def _parse_crew(items: Any) -> List[CrewMember]:
                 system=str(m.get("system", "")),
                 command=[str(c) for c in command],
                 timeout=int(m.get("timeout", 600)),
+                args=args,
             )
         )
     return crew
+
+
+# Flags TheTeamGuy sets itself, so a crew member can't override them.
+_RESERVED_CLAUDE_ARGS = ("-p", "--print")
+
+
+def _parse_crew_args(name: str, kind: str, raw: Any) -> List[str]:
+    if raw is None or raw == []:
+        return []
+    if kind != "claude-code":
+        raise TeamConfigError(
+            f"crew {name!r}: 'args' is for kind 'claude-code'. Put flags for a {kind} member in its command list."
+        )
+    if isinstance(raw, str) or not isinstance(raw, list):
+        raise TeamConfigError(
+            f"crew {name!r}: args must be a list like [--permission-mode, acceptEdits], not a shell string."
+        )
+    args = [str(a) for a in raw]
+    for a in args:
+        if a in _RESERVED_CLAUDE_ARGS or a.startswith("--print="):
+            raise TeamConfigError(f"crew {name!r}: drop {a!r} from args; {name} always runs headless with -p.")
+    return args
 
 
 def load_team(path: Path) -> Team:

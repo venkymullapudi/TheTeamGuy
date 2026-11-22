@@ -70,6 +70,13 @@ crew:
     kind: claude-code
     min_level: 4
     command: [claude]
+    # Headless `claude -p` can't stop and ask before it edits a file or runs a
+    # command, so anything not allowed up front is refused. Pick your poison:
+    #   (none)                            read-only-ish: it looks, it suggests
+    #   [--permission-mode, acceptEdits]  edits files, still no shell commands
+    #   [--allowedTools, "Bash(pytest:*)", Edit]   allow exactly these tools
+    #   [--permission-mode, bypassPermissions]     anything goes; sandboxes only!
+    args: [--permission-mode, acceptEdits]
     timeout: 1800
     description: "Claude Code in this repo: reads and edits code, runs commands, and brings its own subagents and skills."
 

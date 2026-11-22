@@ -103,10 +103,33 @@ hand work to:
 | ------------- | ---------------------------------------------------------------------------- |
 | `llm`         | Another Claude persona with its own system prompt (reviewer, scribe, …)      |
 | `command`     | A fixed command, like `[python3, -m, pytest, -q]`. The task arrives on stdin and in `$TEAMGUY_TASK`, never spliced into the command line |
-| `claude-code` | Claude Code in headless mode (`claude -p`), with its own tools, subagents and skills |
+| `claude-code` | Claude Code in headless mode (`claude -p`), with its own tools, subagents and skills. The task arrives on stdin and in `$TEAMGUY_TASK` |
 
 Each crew member has a `min_level`. An Intern can ask the reviewer for a
 second opinion, but only a Senior gets Claude Code.
+
+#### 🔐 Claude Code permissions (`args:`)
+
+Headless `claude -p` can't pause to ask "may I edit this file?", so anything you
+didn't allow up front just gets refused. A `claude-code` member's `args:` list is
+passed straight to `claude` (as a list, never a shell string; `-p` is added for
+you):
+
+```yaml
+  - name: claude-code
+    kind: claude-code
+    command: [claude]
+    args: [--permission-mode, acceptEdits]
+```
+
+| `args:`                                    | Can it…                          | Trade-off                                  |
+| ------------------------------------------ | -------------------------------- | ------------------------------------------ |
+| *(none)*                                   | read and suggest                 | safest; it can't change anything           |
+| `[--permission-mode, acceptEdits]` *(default)* | edit files, no shell commands | good middle ground; review the diff        |
+| `[--allowedTools, "Bash(pytest:*)", Edit]` | use exactly the tools you list   | tight and explicit, more upkeep            |
+| `[--permission-mode, bypassPermissions]`   | do anything                      | only in a sandbox or throwaway checkout 🙈 |
+
+`teamguy crew` shows each member's args so nobody's surprised.
 
 ### 📖 Skills: team playbooks
 

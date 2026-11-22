@@ -12,15 +12,12 @@ nobody has answered yet. Change them here if you disagree.
 
 ## Now
 
-- [ ] **Claude Code crew args**: let `claude-code` members set `args:` (for
-  example `--permission-mode`, `--allowedTools`) and document the trade-offs.
-  Headless `claude -p` can't stop to ask for permissions.
-
-## Next
-
 - [ ] **Standup inbox**: `teamguy standup --join` reads
   `.teamguy/standups/inbox.md` by default, then clears it, so teammates can drop
   updates in asynchronously.
+
+## Next
+
 - [ ] **Live smoke test**: `scripts/live_smoke.sh` runs onboard → work →
   standup with the Claude brain in a temp dir and skips cleanly when there are
   no credentials.
@@ -42,3 +39,6 @@ nobody has answered yet. Change them here if you disagree.
 - [x] Token budget: `brain.task_token_budget` (default 200k at L0, +50% per
   level, 0 = no limit) caps the guy's turns plus LLM crew per task; past it the
   task is parked as blocked, and `teamguy work` / the work file report usage.
+- [x] Claude Code crew args: `claude-code` members take `args:` (default
+  `--permission-mode acceptEdits`), the task now goes on stdin instead of argv,
+  `teamguy crew` shows the args, and the README explains the permission trade-offs.

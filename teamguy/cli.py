@@ -257,6 +257,8 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             reason = available(m)
             print(f"  {lock:<6} {persona.c(m.name, 'bold'):<14} {m.kind:<12} {m.description}"
                   + (persona.c(f"  ({reason})", "yellow") if reason else ""))
+            if m.args:
+                print(persona.c(f"         ↳ runs with: {' '.join(m.args)}", "dim"))
         return 0
 
     if args.cmd == "skills":

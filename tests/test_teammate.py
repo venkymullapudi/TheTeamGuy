@@ -73,6 +73,9 @@ def test_crew_parsed(team):
     ({"name": "x", "description": "x", "kind": "robot"}, "kind"),
     ({"name": "x", "description": "x", "kind": "command"}, "command list"),
     ({"name": "x", "description": "x", "kind": "command", "command": "rm -rf /"}, "not a shell string"),
+    ({"name": "x", "description": "x", "kind": "claude-code", "args": "--permission-mode acceptEdits"}, "not a shell string"),
+    ({"name": "x", "description": "x", "kind": "claude-code", "args": ["-p"]}, "always runs headless"),
+    ({"name": "x", "description": "x", "kind": "llm", "args": ["--verbose"]}, "is for kind 'claude-code'"),
 ])
 def test_crew_validation(bad, msg):
     import yaml
@@ -177,6 +180,26 @@ def test_command_crew_gets_task_on_stdin_not_argv(team):
     )
     out = run_member(member, "hello; rm -rf /", OfflineBrain(), team)
     assert "ok" in out and "stdin=hello; rm -rf / env=hello; rm -rf /" in out
+
+
+def test_claude_code_crew_gets_args_and_task_on_stdin(team, tmp_path):
+    # A stand-in `claude` that reports the argv and stdin it was given.
+    fake = tmp_path / "fake_claude.py"
+    fake.write_text("import json, os, sys\nprint(json.dumps({'argv': sys.argv[1:], 'stdin': sys.stdin.read(), 'env': os.environ['TEAMGUY_TASK']}))\n")
+    member = CrewMember(
+        name="cc", kind="claude-code", description="x",
+        command=[sys.executable, str(fake)], args=["--permission-mode", "acceptEdits"],
+    )
+    out = run_member(member, "--dangerously-sneaky; rm -rf /", OfflineBrain(), team)
+    import json
+
+    got = json.loads(out.split("\n", 1)[1])
+    assert got["argv"] == ["-p", "--permission-mode", "acceptEdits"]
+    assert got["stdin"] == got["env"] == "--dangerously-sneaky; rm -rf /"
+
+
+def test_template_claude_code_has_args(team):
+    assert team.member("claude-code").args == ["--permission-mode", "acceptEdits"]
 
 
 def test_unavailable_crew_raises(team):

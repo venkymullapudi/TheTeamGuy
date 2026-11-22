@@ -4,8 +4,10 @@ Crew kinds:
   llm          another Claude persona with its own system prompt
   command      a fixed command (e.g. [pytest, -q]); the task arrives on stdin
                and in $TEAMGUY_TASK, never spliced into the command line
-  claude-code  Claude Code in headless mode (`claude -p <task>`), which brings
-               its own tools, subagents and skills
+  claude-code  Claude Code in headless mode (`claude -p <args>`), which brings
+               its own tools, subagents and skills; the task arrives on stdin
+               and in $TEAMGUY_TASK, and `args:` adds flags such as
+               --permission-mode or --allowedTools
 
 Skills are folders with a SKILL.md (frontmatter: name, description, min_level),
 the same shape Claude Code skills use.
@@ -84,8 +86,10 @@ def run_member(member: CrewMember, instructions: str, brain, team: Team) -> str:
         raise RuntimeError(f"{member.name} is unavailable: {reason}")
 
     if member.kind == "claude-code":
-        argv = [*(member.command or ["claude"]), "-p", instructions]
-        stdin = None
+        # The task goes on stdin, not argv: a task starting with "-" can't
+        # pose as a flag, and long tasks don't hit argv limits.
+        argv = [*(member.command or ["claude"]), "-p", *member.args]
+        stdin = instructions
     else:
         argv = list(member.command)
         stdin = instructions
