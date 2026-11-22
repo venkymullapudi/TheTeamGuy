@@ -236,7 +236,7 @@ teamguy init SIM
 | `teamguy show <id>`         | The task's work file: deliverable, crew transcript, tokens      |
 | `teamguy accept <id>`       | Sign off on finished work and grant the XP                      |
 | `teamguy reject <id> "why"` | Send it back to todo with feedback for the next attempt         |
-| `teamguy backlog [add/drop]`| The guy's task list                                             |
+| `teamguy backlog [add/drop/bump]`| The guy's task list (`bump <id>` puts a todo first in line)  |
 | `teamguy level`             | XP, level, what unlocks next, streaks and achievements          |
 | `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |
 | `teamguy kudos "<msg>"`     | Say thanks                                                      |

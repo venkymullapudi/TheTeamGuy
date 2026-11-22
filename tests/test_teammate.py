@@ -619,3 +619,23 @@ def test_standup_brags_about_streak_and_new_achievements(team, state):
     assert "🔥 5 standups in a row" in line and "☕ Regular" in line  # today's standup unlocks it
     stood_up(fri)
     assert "Regular" not in fun.brag_line(state, mon + dt.timedelta(days=7))
+
+
+def test_backlog_bump_puts_a_task_first_in_line(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    for title in ("one", "two", "three"):
+        state.add_task(title)
+    state.data["tasks"][0]["status"] = "review"
+    state.save()
+    assert State.load(team).next_task()["title"] == "two"
+    assert run("backlog", "bump", "3") == 0
+    assert "Bumped #3" in capsys.readouterr().out
+    loaded = State.load(team)
+    assert loaded.next_task()["id"] == 3
+    assert [t["id"] for t in loaded.tasks] == [3, 1, 2]
+    assert run("backlog", "bump", "3") == 0
+    assert "already first" in capsys.readouterr().out
+    assert run("backlog", "bump", "1") == 1  # in review, can't cut the line
+    assert run("backlog", "bump", "99") == 1
+    assert loaded.add_task("four")["id"] == 4  # ids stay unique after reordering

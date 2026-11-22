@@ -126,6 +126,11 @@ class State:
         todo = [t for t in self.tasks if t["status"] == "todo"]
         return todo[0] if todo else None
 
+    def bump_task(self, task: Dict[str, Any]) -> None:
+        """Move a task to the front of the line so ``next_task`` picks it first."""
+        self.tasks.remove(task)
+        self.tasks.insert(0, task)
+
     def finish_task(self, task: Dict[str, Any], status: str, summary: str) -> None:
         task["status"] = status
         task["summary"] = summary

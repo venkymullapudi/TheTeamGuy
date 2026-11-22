@@ -16,8 +16,7 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] **Backlog bump**: `teamguy backlog bump <id>` moves a task to the top so
-  `work --next` picks it first.
+_(empty: add ideas here)_
 
 ## Done
 
@@ -53,3 +52,5 @@ _(empty: the loop takes from Next)_
 - [x] Brag at standup: the standup update ends with a one-line brag (streak this
   standup makes, achievements unlocked since the last standup, each bragged once);
   `fun.as_of` now also takes an ISO timestamp cutoff.
+- [x] Backlog bump: `teamguy backlog bump <id>` moves a todo task to the front
+  of the line so `work --next` picks it first (review/done/blocked can't cut in).

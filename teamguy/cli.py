@@ -79,6 +79,8 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--effort", type=int, default=2)
     b = bsub.add_parser("drop", help="remove a task")
     b.add_argument("id", type=int)
+    b = bsub.add_parser("bump", help="move a task to the top so work --next picks it first")
+    b.add_argument("id", type=int)
     s.add_argument("--all", action="store_true", help="include finished tasks")
 
     s = sub.add_parser("onboard", help="run the guy's onboarding quests")
@@ -381,6 +383,21 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             state.tasks.remove(t)
             state.save()
             print(f"🗑️  Dropped #{t['id']}: {t['title']}")
+            return 0
+        if args.backlog_cmd == "bump":
+            t = state.task(args.id)
+            if not t:
+                print(f"No task #{args.id}.", file=sys.stderr)
+                return 1
+            if t["status"] != "todo":
+                print(f"#{t['id']} is {t['status']}, not todo. Only todo tasks can cut the line.", file=sys.stderr)
+                return 1
+            if state.next_task() is t:
+                print(f"☝️  #{t['id']} is already first in line. {team.guy}: \"On it next, promise.\"")
+                return 0
+            state.bump_task(t)
+            state.save()
+            print(f"⏫ Bumped #{t['id']} to the top: {t['title']}. {team.guy}: \"Say no more, that's next.\"")
             return 0
         icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "review": "👀", "done": "✅"}
         shown = state.tasks if args.all else state.open_tasks()
