@@ -89,6 +89,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("skills", help="the team playbooks the guy can use")
     s = sub.add_parser("kudos", help="say thanks (+XP)")
     s.add_argument("message", nargs="*")
+    s = sub.add_parser("recap", help="the last week in one pasteable post for the team channel")
+    s.add_argument("--days", type=int, default=7, help="how many days back (default 7)")
+    s.add_argument("--date", type=_date, default=dt.date.today(), help="last day of the recap")
     s = sub.add_parser("journal", help="recent contributions")
     s.add_argument("-n", type=int, default=15)
 
@@ -137,7 +140,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(persona.today(team, args.date))
         elif args.cmd == "standup":
             return _standup(team, args)
-        elif args.cmd in ("work", "accept", "reject", "show", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal"):
+        elif args.cmd in ("work", "accept", "reject", "show", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal", "recap"):
             return _teammate(team, args)
         elif args.cmd == "oncall":
             print(persona.oncall(team, args.date, max(1, args.weeks)))
@@ -312,6 +315,10 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
         print(f"🥹 {team.guy}: Thank you! That means a lot. (Saving this one for my promo packet.)")
         _announce(team, [award])
         _new_achievements(state, had)
+        return 0
+
+    if args.cmd == "recap":
+        print(fun.recap(team.guy, state, args.date, args.days))
         return 0
 
     if args.cmd == "journal":

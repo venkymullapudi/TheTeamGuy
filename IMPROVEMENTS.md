@@ -16,8 +16,6 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] **Weekly recap**: `teamguy recap` prints the last 7 days (tasks accepted,
-  XP, streak, new achievements) as a short, pasteable post for the team channel.
 - [ ] **Brag at standup**: the guy's standup update mentions his streak and any
   achievement unlocked since the last standup (one line, no gloating... much).
 - [ ] **Backlog bump**: `teamguy backlog bump <id>` moves a task to the top so
@@ -51,3 +49,6 @@ _(empty: the loop takes from Next)_
 - [x] Streaks and fun: `teamguy level` shows a workday standup streak (and best),
   a 🔥 on-fire badge (5+ tasks accepted in 7 days) and six achievements derived
   from the journal; `accept` and `kudos` announce newly unlocked ones.
+- [x] Weekly recap: `teamguy recap` prints a pasteable, colorless week in review
+  (accepted tasks, XP, standups and streak, kudos, achievements new this week,
+  tasks waiting for review); `--days` and `--date` move the window.

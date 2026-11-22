@@ -546,3 +546,39 @@ def test_level_shows_achievements_and_kudos_unlocks_one(team, capsys):
     assert main(["-f", f, "level"]) == 0
     out = capsys.readouterr().out
     assert "Achievements (1/" in out and "Standup streak" in out and "🔒 First Ship" in out
+
+
+# ─── weekly recap ────────────────────────────────────────────────────────────
+
+
+def test_recap_counts_only_this_week_and_spots_new_achievements(team, state):
+    from teamguy import fun
+
+    today = dt.date(2026, 11, 22)
+    old = state.add_task("ancient history")
+    old.update(status="done", accepted="2026-11-01T10:00:00")
+    state.data["log"].append({"at": "2026-11-01T10:00:00", "kind": "task_done", "xp": 40, "summary": "old"})
+    new = state.add_task("fix the flaky test")
+    new.update(status="done", accepted="2026-11-20T10:00:00", feedback=[{"at": "x", "why": "more tests"}])
+    state.data["log"].append({"at": "2026-11-20T10:00:00", "kind": "task_done", "xp": 25, "summary": "new"})
+    for d in ("2026-11-19", "2026-11-20"):
+        state.data["log"].append({"at": f"{d}T09:30:00", "kind": "standup", "xp": 10, "summary": "standup", "day": d})
+    state.add_task("waiting").update(status="review")
+
+    out = fun.recap(team.guy, state, today)
+    assert "Nov 16 – Nov 22" in out
+    assert "#2 fix the flaky test" in out and "ancient history" not in out
+    assert "+45" in out  # 25 XP task + 2 x 10 XP standups; the old 40 XP doesn't count
+    assert "Standups: 2 attended" in out
+    assert "Comeback Kid" in out and "First Ship" not in out  # first ship happened weeks ago
+    assert "1 task in review" in out
+    assert "\033[" not in out  # pasteable: no colors
+
+
+def test_recap_quiet_week_and_cli(team, capsys):
+    from teamguy import fun
+
+    out = fun.recap(team.guy, State(team.state_dir / "state.json"), dt.date(2026, 11, 22))
+    assert "nothing accepted" in out and "Quiet week" in out
+    assert main(["-f", str(team.base_dir / "team.yaml"), "recap", "--days", "3"]) == 0
+    assert "week in review" in capsys.readouterr().out

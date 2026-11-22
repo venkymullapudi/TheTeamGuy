@@ -187,6 +187,13 @@ more model turns per task.
   💌 Fan Favorite (3 kudos), 🏭 Shipyard (10 accepted). `accept` and `kudos`
   announce new ones the moment they unlock.
 
+### Weekly recap 📰
+
+`teamguy recap` prints the last 7 days as a short, plain-text post you can paste
+straight into the team channel: tasks accepted, XP earned, standups and streak,
+kudos, achievements unlocked this week, and anything still waiting on your
+review. `--days 14` widens the window; `--date 2026-11-20` ends it on another day.
+
 State (XP, backlog, journal, notes) lives in `.teamguy/state.json` next to
 `team.yaml`. Every task also gets a work file at
 `.teamguy/work/<id>-<slug>.md` with the final deliverable, the crew transcript
@@ -230,6 +237,7 @@ teamguy init SIM
 | `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |
 | `teamguy kudos "<msg>"`     | Say thanks                                                      |
 | `teamguy journal`           | Recent contributions                                            |
+| `teamguy recap [--days N]`  | The week in review, ready to paste into the team channel        |
 | `teamguy whoami`            | Banner, mission, level, and a catchphrase                       |
 | `teamguy duties [-v]`       | Everything the guy does (`-v` adds checklists)                  |
 | `teamguy duty <id>`         | One duty in detail, e.g. `teamguy duty release`                 |

@@ -110,3 +110,61 @@ def streak_line(state: State, today: Optional[dt.date] = None) -> str:
     if on_fire(state, today):
         line += f"\n  🔥 ON FIRE: {accepted_since(state, today - dt.timedelta(days=ON_FIRE_DAYS - 1))} tasks accepted this week. Someone get this guy a fire extinguisher."
     return line
+
+
+# ─── weekly recap ────────────────────────────────────────────────────────────
+
+RECAP_DAYS = 7
+
+
+def as_of(state: State, cutoff: dt.date) -> State:
+    """The guy's state as it stood before `cutoff`: later log entries are dropped
+    and tasks accepted on or after it are back in review. Used to tell which
+    achievements are new this week."""
+    iso = cutoff.isoformat()
+    tasks = []
+    for t in state.tasks:
+        t = dict(t)
+        if t["status"] == "done" and t.get("accepted", "")[:10] >= iso:
+            t["status"] = "review"
+        tasks.append(t)
+    log = [e for e in state.data["log"] if e["at"][:10] < iso and e.get("day", e["at"][:10]) < iso]
+    return State(state.path, {**state.data, "tasks": tasks, "log": log})
+
+
+def recap(guy: str, state: State, today: Optional[dt.date] = None, days: int = RECAP_DAYS) -> str:
+    """A short, pasteable week-in-review for the team channel. Plain text, no colors."""
+    today = today or dt.date.today()
+    since = today - dt.timedelta(days=max(1, days) - 1)
+    lo, hi = since.isoformat(), today.isoformat()
+    in_window = lambda iso: lo <= iso[:10] <= hi  # noqa: E731
+
+    shipped = [t for t in state.tasks if t["status"] == "done" and in_window(t.get("accepted", ""))]
+    xp = sum(int(e.get("xp", 0)) for e in state.data["log"] if in_window(e["at"]))
+    standups = sum(1 for d in standup_days(state) if since <= d <= today)
+    kudos = sum(1 for e in state.data["log"] if e["kind"] == "kudos" and in_window(e["at"]))
+    before = {a.key for a in unlocked(as_of(state, since))}
+    new = [a for a in unlocked(state) if a.key not in before]
+    streak = standup_streak(state, today)
+
+    lines = [f"📰 {guy}'s week in review ({since:%b %d} – {today:%b %d})", ""]
+    if shipped:
+        lines.append(f"🚢 Shipped {len(shipped)} task{'s' if len(shipped) != 1 else ''}:")
+        lines += [f"   • #{t['id']} {t['title']}" for t in shipped]
+    else:
+        lines.append("🚢 Shipped: nothing accepted this week. The backlog is plotting something.")
+    lines.append(f"✨ XP earned: +{xp} (total {state.xp}, L{state.level.number} {state.level.name(guy)})")
+    lines.append(f"☕ Standups: {standups} attended · streak {streak}" + (" 🔥" if streak >= 5 else ""))
+    if kudos:
+        lines.append(f"💌 Kudos received: {kudos}. Not that anyone's counting. (He's counting.)")
+    if new:
+        lines.append("🏆 New achievements: " + ", ".join(f"{a.emoji} {a.title}" for a in new))
+    if on_fire(state, today):
+        lines.append("🔥 Status: on fire. Please do not feed the guy more coffee.")
+    waiting = len(state.in_review())
+    if waiting:
+        lines.append(f"👀 Waiting on you: {waiting} task{'s' if waiting != 1 else ''} in review (`teamguy accept <id>`).")
+    if not (shipped or xp or standups):
+        lines.append("")
+        lines.append("Quiet week. He was definitely thinking very hard the whole time.")
+    return "\n".join(lines)
