@@ -12,10 +12,6 @@ nobody has answered yet. Change them here if you disagree.
 
 ## Now
 
-- [ ] **Token budget** *(default: per-task budget that grows with level)*. Count
-  input/output tokens across the guy's own calls and his LLM crew calls, report
-  them per task, and stop gracefully when a task goes past
-  `brain.task_token_budget` (scaled by level).
 - [ ] **Claude Code crew args**: let `claude-code` members set `args:` (for
   example `--permission-mode`, `--allowedTools`) and document the trade-offs.
   Headless `claude -p` can't stop to ask for permissions.
@@ -43,3 +39,6 @@ nobody has answered yet. Change them here if you disagree.
   XP, `teamguy reject <id> "why"` sends it back with feedback the retry sees.
 - [x] Deliverables are saved: each task writes `.teamguy/work/<id>-<slug>.md`
   (deliverable, crew transcript, tokens); `teamguy show <id>` prints it.
+- [x] Token budget: `brain.task_token_budget` (default 200k at L0, +50% per
+  level, 0 = no limit) caps the guy's turns plus LLM crew per task; past it the
+  task is parked as blocked, and `teamguy work` / the work file report usage.

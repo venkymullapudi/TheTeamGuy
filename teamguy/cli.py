@@ -213,7 +213,7 @@ def _standup(team: Team, args: argparse.Namespace) -> int:
 def _teammate(team: Team, args: argparse.Namespace) -> int:
     from .crew import available, load_skills
     from .onboarding import quest_status, run_onboarding
-    from .work import work_on
+    from .work import budget_line, work_on
 
     state = State.load(team)
 
@@ -368,6 +368,8 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
     print(f"\n{verdict}: {report.summary}")
     if report.result and report.result.text and report.result.text != report.summary:
         print(persona.c("\n" + report.result.text, "dim"))
+    print(persona.c(f"\n   🪙 Tokens: in {report.tokens.get('input', 0):,} · out {report.tokens.get('output', 0):,}"
+                    f" · budget {budget_line(report)}", "dim"))
     if report.work_file:
         print(persona.c(f"\n   📄 Work saved to {report.work_file}  (teamguy show {task['id']})", "dim"))
     if report.status == "done":

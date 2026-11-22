@@ -61,6 +61,11 @@ def max_steps(level: Level) -> int:
     return 4 + 2 * level.number
 
 
+def token_budget(base: int, level: Level) -> int:
+    """Tokens the guy may spend on one task: the base, plus half again per level. 0 = no limit."""
+    return max(0, base) * (2 + level.number) // 2
+
+
 def progress_bar(xp: int, level: Level, width: int = 24) -> str:
     nxt = next_level(level)
     if nxt is None:

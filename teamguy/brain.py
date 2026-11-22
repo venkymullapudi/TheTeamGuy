@@ -51,7 +51,7 @@ class Step:
 class RunResult:
     text: str
     steps: List[Step] = field(default_factory=list)
-    stopped: str = "done"  # done | max_steps | refusal
+    stopped: str = "done"  # done | max_steps | refusal | budget
 
 
 Plan = Callable[[], List[Dict[str, Any]]]
@@ -94,8 +94,9 @@ class OfflineBrain:
     def __init__(self) -> None:
         self.usage: Dict[str, int] = {"input": 0, "output": 0}  # free, always
 
-    def run(self, system: str, prompt: str, tools: List[Tool], max_steps: int, plan: Optional[Plan] = None) -> RunResult:
-        by_name = {t.name: t for t in tools}
+    def run(self, system: str, prompt: str, tools: List[Tool], max_steps: int, plan: Optional[Plan] = None,
+            budget: Optional[int] = None) -> RunResult:
+        by_name = {t.name: t for t in tools}  # budget: nothing to spend, the offline brain is free
         calls = plan() if plan else []
         steps = [call_tool(by_name.get(c["tool"]), c["input"]) for c in calls[:max_steps]]
         stopped = "done" if len(calls) <= max_steps else "max_steps"
@@ -173,12 +174,24 @@ class ClaudeBrain:
     def _text(response: Any) -> str:
         return "\n".join(b.text for b in response.content if getattr(b, "type", "") == "text").strip()
 
-    def run(self, system: str, prompt: str, tools: List[Tool], max_steps: int, plan: Optional[Plan] = None) -> RunResult:
+    def spent(self) -> int:
+        return self.usage["input"] + self.usage["output"]
+
+    def run(self, system: str, prompt: str, tools: List[Tool], max_steps: int, plan: Optional[Plan] = None,
+            budget: Optional[int] = None) -> RunResult:
+        """`budget` caps the tokens this run may spend (its own turns plus LLM crew
+        calls made from its tools). Checked before every turn after the first."""
         by_name = {t.name: t for t in tools}
         api_tools = [t.api_definition() for t in tools]
         messages: List[Dict[str, Any]] = [{"role": "user", "content": prompt}]
         steps: List[Step] = []
-        for _ in range(max_steps):
+        start = self.spent()
+        for turn in range(max_steps):
+            used = self.spent() - start
+            if budget and turn and used >= budget:
+                return RunResult(
+                    f"🪙 Out of token budget ({used:,} of {budget:,}). Parking this before the bill gets spicy.",
+                    steps, "budget")
             response = self._create(system=system, messages=messages, tools=api_tools)
             if response.stop_reason == "refusal":
                 return RunResult(self._text(response) or "I can't help with that one.", steps, "refusal")

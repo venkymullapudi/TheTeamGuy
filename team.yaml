@@ -22,9 +22,14 @@ emoji: "🦸"
 # claude  → real reasoning on the Claude API (pip install 'teamguy[claude]')
 # offline → scripted, free, deterministic (great for demos and CI)
 # auto    → claude if the SDK is installed, else offline
+#
+# task_token_budget: tokens $GUY may spend on one task (his own turns plus his
+# LLM crew), at L0. It grows by half again per level (L2 = 2x, L7 = 4.5x).
+# Past it, he parks the task as blocked instead of burning more. 0 = no limit.
 brain:
   provider: auto
   model: claude-opus-5-5
+  task_token_budget: 200000
 
 # ─── The Crew ────────────────────────────────────────────────────────────────
 # Other agents, LLMs and tools $GUY works with. $GUY hands them pieces of a

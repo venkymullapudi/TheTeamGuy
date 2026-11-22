@@ -13,7 +13,7 @@ from .brain import RunResult, Tool
 from .cadence import describe
 from .config import Team
 from .crew import Skill, available, load_skills, run_member, word_overlap
-from .levels import FOLLOWUP_LEVEL, XP, max_steps
+from .levels import FOLLOWUP_LEVEL, XP, max_steps, token_budget
 from .state import Award, State
 
 Out = Callable[[str], None]
@@ -54,7 +54,13 @@ class WorkReport:
     awards: List[Award] = field(default_factory=list)
     transcript: List[Dict[str, str]] = field(default_factory=list)
     tokens: Dict[str, int] = field(default_factory=lambda: {"input": 0, "output": 0})
+    budget: int = 0  # 0 = no limit
     work_file: Optional[Path] = None
+    start_usage: Dict[str, int] = field(default_factory=dict)
+
+    def spent(self, brain) -> int:
+        usage = getattr(brain, "usage", None) or {}
+        return sum(int(usage.get(k, 0)) - int(self.start_usage.get(k, 0)) for k in ("input", "output"))
 
 
 def _schema(props: Dict[str, Any]) -> Dict[str, Any]:
@@ -81,6 +87,12 @@ def build_tools(team: Team, state: State, brain, report: WorkReport, out: Out) -
             out(f"   🤝 {team.guy} → {member.name}: {_short(inp['instructions'])}")
             entry = {"member": member.name, "asked": inp["instructions"], "reply": ""}
             report.transcript.append(entry)
+            used = report.spent(brain)
+            if member.kind == "llm" and report.budget and used >= report.budget:
+                entry["reply"] = "(skipped: token budget spent)"
+                raise RuntimeError(
+                    f"Token budget spent ({used:,} of {report.budget:,}). Wrap up with complete_task: "
+                    "say what's done and what's left.")
             try:
                 reply = run_member(member, inp["instructions"], brain, team)
             except Exception as exc:
@@ -175,7 +187,8 @@ def offline_plan(team: Team, state: State, task: Dict[str, Any]) -> List[Dict[st
 
 
 def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = print) -> WorkReport:
-    report = WorkReport(task=task)
+    report = WorkReport(task=task, budget=token_budget(team.task_token_budget, state.level))
+    report.start_usage = dict(getattr(brain, "usage", None) or {})
     task["status"] = "doing"
     tools = build_tools(team, state, brain, report, out)
     locked = [m for m in team.crew if m.min_level > state.level.number]
@@ -188,13 +201,14 @@ def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = pr
         prompt += "\nA teammate reviewed an earlier attempt and sent it back. Address this feedback:\n" + "\n".join(
             f"- {f['why']}" for f in feedback)
     out(f"🛠️  {team.guy} picks up #{task['id']}: {task['title']}")
-    before = dict(getattr(brain, "usage", None) or {})
+    if report.budget:
+        prompt += f"\nToken budget for this task: {report.budget:,} (yours plus your LLM crew's)."
     report.result = brain.run(
         persona_system(team, state), prompt, tools, max_steps(state.level),
-        plan=lambda: offline_plan(team, state, task),
+        plan=lambda: offline_plan(team, state, task), budget=report.budget or None,
     )
     after = getattr(brain, "usage", None) or {}
-    report.tokens = {k: int(after.get(k, 0)) - int(before.get(k, 0)) for k in ("input", "output")}
+    report.tokens = {k: int(after.get(k, 0)) - int(report.start_usage.get(k, 0)) for k in ("input", "output")}
     if not report.summary:
         report.summary = report.result.text or f"Stopped ({report.result.stopped}) before finishing."
     if report.status == "done":
@@ -266,8 +280,18 @@ def render_work_file(team: Team, report: WorkReport) -> str:
         lines += ["## Follow-ups filed", ""] + [f"- 📌 #{t['id']}: {t['title']}" for t in report.followups] + [""]
     tin, tout = report.tokens.get("input", 0), report.tokens.get("output", 0)
     note = "  (offline brain: free as in coffee ☕)" if not (tin or tout) else ""
-    lines += ["## Tokens", "", f"- in: {tin:,} · out: {tout:,} · total: {tin + tout:,}{note}", ""]
+    lines += ["## Tokens", "", f"- in: {tin:,} · out: {tout:,} · total: {tin + tout:,}{note}",
+              f"- budget: {budget_line(report)}", ""]
     return "\n".join(lines)
+
+
+def budget_line(report: WorkReport) -> str:
+    if not report.budget:
+        return "no limit (living dangerously)"
+    used = report.tokens.get("input", 0) + report.tokens.get("output", 0)
+    pct = used * 100 // report.budget
+    tail = "  🪙 ran out, task parked" if report.result and report.result.stopped == "budget" else ""
+    return f"{used:,} of {report.budget:,} ({pct}%){tail}"
 
 
 def save_work_file(team: Team, report: WorkReport) -> Path:

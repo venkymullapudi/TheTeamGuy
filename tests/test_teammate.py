@@ -381,3 +381,59 @@ def test_oauth_token_in_api_key_gets_a_clear_error(monkeypatch):
     brain = ClaudeBrain(client=NS(beta=NS(messages=NS(create=boom))))
     with pytest.raises(BrainError, match="OAuth token"):
         brain.complete("sys", "hi")
+
+
+# ─── token budget ────────────────────────────────────────────────────────────
+
+def test_token_budget_grows_with_level_and_parses(team):
+    from teamguy.levels import token_budget
+    assert team.task_token_budget == 200_000
+    assert [token_budget(1000, LADDER[n]) for n in (0, 2, 7)] == [1000, 2000, 4500]
+    assert token_budget(0, LADDER[7]) == 0
+    raw = {"team": "SIM", "duties": [{"id": "x", "title": "X", "cadence": "daily", "description": "x"}]}
+    assert parse_team({**raw, "brain": {"task_token_budget": 5}}).task_token_budget == 5
+    for bad in ("lots", -1):
+        with pytest.raises(TeamConfigError, match="task_token_budget"):
+            parse_team({**raw, "brain": {"task_token_budget": bad}})
+
+
+def test_task_stops_gracefully_past_token_budget(team, state):
+    graduate(state, 100)  # Intern: budget 200k * 1.5 = 300k, LLM crew unlocked
+    team.task_token_budget = 100  # L1 → 150
+    task = state.add_task("review the auth PR!", 2)
+    client = FakeClient([
+        NS(stop_reason="tool_use", usage=NS(input_tokens=100, output_tokens=10),
+           content=[tool_use("t1", "delegate", {"member": "reviewer", "instructions": "Review PR 42"})]),
+        NS(stop_reason="end_turn", usage=NS(input_tokens=50, output_tokens=20), content=[text("Looks fine.")]),
+        NS(stop_reason="tool_use", usage=NS(input_tokens=999, output_tokens=1),
+           content=[tool_use("t2", "use_skill", {"name": "ticket-triage"})]),
+    ])
+    report = work_on(team, state, ClaudeBrain(client=client), task, out=quiet)
+    assert report.budget == 150
+    assert report.result.stopped == "budget" and len(client.requests) == 2  # never sent turn 3
+    assert report.status == task["status"] == "blocked"
+    assert "Out of token budget (180 of 150)" in report.summary
+    assert "Token budget for this task: 150" in client.requests[0]["messages"][0]["content"]
+    md = report.work_file.read_text()
+    assert "- budget: 180 of 150 (120%)  🪙 ran out, task parked" in md
+
+
+def test_llm_crew_is_skipped_once_budget_is_spent(team, state):
+    graduate(state, 100)
+    team.task_token_budget = 10  # L1 → 15
+    task = state.add_task("review the auth PR!", 2)
+    client = FakeClient([
+        NS(stop_reason="tool_use", usage=NS(input_tokens=20, output_tokens=0),
+           content=[tool_use("t1", "delegate", {"member": "reviewer", "instructions": "Review PR 42"})]),
+    ])
+    report = work_on(team, state, ClaudeBrain(client=client), task, out=quiet)
+    assert len(client.requests) == 1  # reviewer never called, next turn refused
+    assert report.transcript[0]["reply"] == "(skipped: token budget spent)"
+    assert report.result.stopped == "budget"
+
+
+def test_zero_budget_means_no_limit_and_offline_reports_it(team, state):
+    team.task_token_budget = 0
+    report = work_on(team, state, OfflineBrain(), state.add_task("write release notes", 1), out=quiet)
+    assert report.budget == 0 and report.status == "done"
+    assert "no limit (living dangerously)" in report.work_file.read_text()

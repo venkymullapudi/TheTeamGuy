@@ -61,6 +61,7 @@ class FAQ:
 
 CREW_KINDS = ("llm", "command", "claude-code")
 DEFAULT_MODEL = "claude-opus-5-5"
+DEFAULT_TASK_TOKEN_BUDGET = 200_000
 
 
 @dataclass
@@ -96,6 +97,7 @@ class Team:
     crew: List[CrewMember] = field(default_factory=list)
     brain_provider: str = "auto"
     model: str = DEFAULT_MODEL
+    task_token_budget: int = DEFAULT_TASK_TOKEN_BUDGET  # per task at L0; grows with level; 0 = no limit
     skills_dir: str = "skills"
     onboarding_docs: List[str] = field(default_factory=list)
     base_dir: Path = field(default_factory=Path.cwd)
@@ -196,12 +198,19 @@ def parse_team(raw: Any) -> Team:
     provider = str(brain.get("provider", "auto"))
     if provider not in ("auto", "claude", "offline"):
         raise TeamConfigError("brain.provider must be auto, claude or offline.")
+    try:
+        task_token_budget = int(brain.get("task_token_budget", DEFAULT_TASK_TOKEN_BUDGET))
+    except (TypeError, ValueError):
+        raise TeamConfigError("brain.task_token_budget should be a whole number of tokens (0 = no limit).") from None
+    if task_token_budget < 0:
+        raise TeamConfigError("brain.task_token_budget can't be negative (0 = no limit).")
     onboarding = raw.get("onboarding") or {}
 
     return Team(
         crew=crew,
         brain_provider=provider,
         model=str(brain.get("model", DEFAULT_MODEL)),
+        task_token_budget=task_token_budget,
         skills_dir=str(raw.get("skills_dir", "skills")),
         onboarding_docs=[str(d) for d in onboarding.get("docs") or ["README.md"]],
         name=name,

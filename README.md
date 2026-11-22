@@ -152,6 +152,16 @@ State (XP, backlog, journal, notes) lives in `.teamguy/state.json` next to
 (who was asked what, and what came back) and the tokens it took. Read it with
 `teamguy show <id>` before you accept or reject.
 
+### Token budget 🪙
+
+Every task has a token budget: `brain.task_token_budget` in `team.yaml`
+(default 200,000) at L0, plus half again per level (L2 gets 2x, L7 gets 4.5x).
+It counts the guy's own turns and his LLM crew calls. Once it's spent, LLM crew
+hand-offs are refused, the guy stops before his next turn, and the task is
+parked as 🧱 blocked with a note instead of quietly burning money. `teamguy
+work` and the work file show tokens in/out and how much of the budget went.
+Set it to `0` for no limit.
+
 ## Summon your guy
 
 ```bash
