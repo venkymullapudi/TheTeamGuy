@@ -12,9 +12,7 @@ nobody has answered yet. Change them here if you disagree.
 
 ## Now
 
-- [ ] **Live smoke test**: `scripts/live_smoke.sh` runs onboard → work →
-  standup with the Claude brain in a temp dir and skips cleanly when there are
-  no credentials.
+_(empty: the loop takes from Next)_
 
 ## Next
 
@@ -42,3 +40,7 @@ nobody has answered yet. Change them here if you disagree.
 - [x] Standup inbox: `--join` reads `.teamguy/standups/inbox.md` when no
   `--updates` file is given, clears it afterwards (`--keep-inbox` to keep), and
   the preview shows who has already checked in.
+- [x] Live smoke test: `scripts/live_smoke.sh` runs onboard → work → standup
+  with the Claude brain in a temp dir; skips (exit 0) with no SDK or no
+  API key/auth token in the env (OAuth tokens don't count), `TEAMGUY_SMOKE_FORCE=1`
+  overrides, `KEEP=1` keeps the folder. Tests cover the skip paths with a fake binary.

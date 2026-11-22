@@ -342,6 +342,16 @@ pytest
 
 The tests use the offline brain and a fake Claude client, so they cost nothing.
 
+Want proof the real brain works end to end? The live smoke test births a
+throwaway TheSMOKEGuy in a temp folder and runs onboard → work → standup with
+Claude. It spends a few real tokens, and skips politely (exit 0) when there's no
+SDK or no `ANTHROPIC_API_KEY` (`TEAMGUY_SMOKE_FORCE=1` runs it anyway, `KEEP=1`
+keeps the folder):
+
+```bash
+scripts/live_smoke.sh
+```
+
 ## License
 
 Apache 2.0. TheSIMGuy is not liable for any Friday deploys.
