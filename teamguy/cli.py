@@ -69,6 +69,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("id", type=int)
     s.add_argument("why", nargs="+", help="what to fix; the next attempt sees it")
 
+    s = sub.add_parser("unblock", help="send blocked work back to todo with a note that clears the way")
+    s.add_argument("id", type=int)
+    s.add_argument("note", nargs="+", help="what changed or how to get past it; the next attempt sees it")
+
     s = sub.add_parser("show", help="print a task's work file: deliverable, crew transcript, tokens")
     s.add_argument("id", type=int)
 
@@ -142,7 +146,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(persona.today(team, args.date))
         elif args.cmd == "standup":
             return _standup(team, args)
-        elif args.cmd in ("work", "accept", "reject", "show", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal", "recap"):
+        elif args.cmd in ("work", "accept", "reject", "unblock", "show", "backlog", "onboard", "level", "crew", "skills", "kudos", "journal", "recap"):
             return _teammate(team, args)
         elif args.cmd == "oncall":
             print(persona.oncall(team, args.date, max(1, args.weeks)))
@@ -356,6 +360,21 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(persona.c(f"   Try again: teamguy work {t['id']}", "dim"))
         return 0
 
+    if args.cmd == "unblock":
+        t = state.task(args.id)
+        if not t:
+            print(f"No task #{args.id}.", file=sys.stderr)
+            return 1
+        if t["status"] != "blocked":
+            print(f"#{t['id']} isn't blocked (it's {t['status']}). Nothing to knock down.", file=sys.stderr)
+            return 1
+        note = " ".join(args.note)
+        state.unblock_task(t, note)
+        state.save()
+        print(f"🧱💥 #{t['id']} is unblocked and back on the backlog. {team.guy}: \"Oh, THAT's the trick. Noted: {note}\"")
+        print(persona.c(f"   Go again: teamguy work {t['id']}", "dim"))
+        return 0
+
     if args.cmd == "show":
         t = state.task(args.id)
         if not t:
@@ -443,6 +462,8 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
         xp = State.task_xp(task)
         print(persona.c(f"\n   Worth +{xp} XP once you sign off: teamguy accept {task['id']}"
                         f'  (or: teamguy reject {task["id"]} "what to fix")', "dim"))
+    elif task["status"] == "blocked":
+        print(persona.c(f'\n   Know the way past it? teamguy unblock {task["id"]} "what changed"', "dim"))
     _announce(team, report.awards)
     return 0
 

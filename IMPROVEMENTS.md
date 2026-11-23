@@ -16,8 +16,6 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Unblock: `teamguy unblock <id> "note"` moves a 🧱 blocked task back to todo
-  with a note the next attempt sees (like reject, but for blocked work).
 - [ ] Re-estimate: `teamguy backlog effort <id> N` changes a todo task's effort
   (and so its XP) with a cheeky comment when it grows past 3 ☕.
 
@@ -60,3 +58,5 @@ _(empty: the loop takes from Next)_
 - [x] Review nudges: tasks sitting in 👀 review for 2+ days get "⏳ N days and
   counting" (🕸️ cobwebs at 5+) in standup blockers and `teamguy backlog`; the
   recap names the oldest one. `State.review_age` counts the days.
+- [x] Unblock: `teamguy unblock <id> "note"` moves a 🧱 blocked task back to todo;
+  the retry's prompt and work file carry the notes, and blocked `work` runs hint at it.

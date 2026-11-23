@@ -200,6 +200,10 @@ def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = pr
     if feedback:
         prompt += "\nA teammate reviewed an earlier attempt and sent it back. Address this feedback:\n" + "\n".join(
             f"- {f['why']}" for f in feedback)
+    unblocks = task.get("unblocks") or []
+    if unblocks:
+        prompt += "\nAn earlier attempt got blocked. A teammate cleared the way with these notes:\n" + "\n".join(
+            f"- {u['note']}" for u in unblocks)
     out(f"🛠️  {team.guy} picks up #{task['id']}: {task['title']}")
     if report.budget:
         prompt += f"\nToken budget for this task: {report.budget:,} (yours plus your LLM crew's)."
@@ -258,6 +262,9 @@ def render_work_file(team: Team, report: WorkReport) -> str:
     feedback = task.get("feedback") or []
     if feedback:
         lines += ["## Review feedback addressed", ""] + [f"- {f['why']}" for f in feedback] + [""]
+    unblocks = task.get("unblocks") or []
+    if unblocks:
+        lines += ["## Unblock notes", ""] + [f"- 🧱➡️ {u['note']}" for u in unblocks] + [""]
     if report.skills_used:
         lines += ["## Playbooks used", ""] + [f"- 📖 {s}" for s in report.skills_used] + [""]
     lines += ["## Crew transcript", ""]

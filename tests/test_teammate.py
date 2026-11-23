@@ -296,6 +296,38 @@ def test_rejected_work_goes_back_with_feedback(team, state):
     assert "the build is still red" in client.requests[0]["messages"][0]["content"]
 
 
+def test_blocked_work_unblocks_with_a_note(team, state):
+    task = state.add_task("deploy to staging", 1)
+    with pytest.raises(ValueError):
+        state.unblock_task(task, "nope")  # todo isn't blocked
+    state.finish_task(task, "blocked", "staging is down")
+    xp = state.xp
+    award = state.unblock_task(task, "staging is back up")
+    assert task["status"] == "todo" and state.xp == xp and award.xp == 0
+    assert task["unblocks"][0]["note"] == "staging is back up"
+    assert not task.get("feedback")  # not a reject: no Comeback Kid freebie
+
+    client = FakeClient([NS(stop_reason="refusal", content=[])])
+    work_on(team, state, ClaudeBrain(client=client), task, out=quiet)
+    assert "staging is back up" in client.requests[0]["messages"][0]["content"]
+    assert "Unblock notes" in (team.state_dir / task["work_file"]).read_text()
+
+
+def test_cli_unblock(team, capsys, monkeypatch):
+    f = str(team.base_dir / "team.yaml")
+    monkeypatch.setenv("TEAMGUY_BRAIN", "offline")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state = State.load(team)
+    task = state.add_task("rotate the certs", 1)
+    state.finish_task(task, "blocked", "need vault access")
+    state.save()
+    assert run("unblock", "1", "vault", "access", "granted") == 0
+    assert "unblocked" in capsys.readouterr().out
+    assert State.load(team).task(1)["status"] == "todo"
+    assert run("unblock", "1", "again") == 1  # already todo
+    assert run("unblock", "99", "x") == 1
+
+
 def test_followups_unlock_at_teammate(team, state):
     from teamguy.work import WorkReport, build_tools
 

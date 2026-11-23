@@ -167,6 +167,15 @@ class State:
         task.setdefault("feedback", []).append({"at": _now(), "why": why})
         return self.award("task_rejected", 0, f"Back to the drawing board on #{task['id']}: {why}", task=task["id"])
 
+    def unblock_task(self, task: Dict[str, Any], note: str) -> Award:
+        """Clear a blocker: back to todo with a note the next attempt sees."""
+        if task["status"] != "blocked":
+            raise ValueError(f"#{task['id']} is {task['status']}, not blocked")
+        note = note.strip() or "The wall is gone. Go again."
+        task["status"] = "todo"
+        task.setdefault("unblocks", []).append({"at": _now(), "note": note})
+        return self.award("task_unblocked", 0, f"Wall knocked down on #{task['id']}: {note}", task=task["id"])
+
     # ─── knowledge (what the guy learned) ────────────────────────────────
     def learn(self, topic: str, notes: str) -> None:
         self.data["knowledge"][topic] = notes.strip()
