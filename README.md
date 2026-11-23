@@ -177,7 +177,8 @@ back to the backlog, and the guy sees every note on the next attempt. Stuck work
 works the same way: `teamguy unblock <id> "creds are in the vault now"` moves a
 🧱 blocked task back to todo with your note. Want to help before the first
 try? `teamguy backlog note <id> "the logs are in Grafana"` pins context to a
-todo task, and the guy reads every note before starting. Standup,
+todo task, and the guy reads every note before starting; `teamguy backlog`
+marks those tasks with a 📎N count so you can see what's already got context. Standup,
 onboarding and kudos XP stay automatic.
 
 Work left in review doesn't get forgotten: after 2 days the standup blocker,

@@ -16,8 +16,6 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Show notes: `teamguy backlog` marks todo tasks that carry notes with a 📎N
-  count, so you can see which ones already have context pinned.
 - [ ] Backlog stats: `teamguy backlog --stats` prints counts by status plus total
   coffees left in todo, with a quip about how many days of caffeine that is.
 
@@ -71,3 +69,5 @@ _(empty: the loop takes from Next)_
   whose title, old names or summary contain every word (case-insensitive).
 - [x] Task notes: `teamguy backlog note <id> "..."` pins context to a todo task;
   the work prompt and work file include every note (blocked/review get a hint).
+- [x] Show notes: `teamguy backlog` marks todo tasks that carry notes with a 📎N
+  count (review/done/blocked stay clean).

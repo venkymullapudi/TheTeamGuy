@@ -814,3 +814,26 @@ def test_backlog_note_pins_context_for_the_next_attempt(team, state, capsys):
     prompt = client.requests[0]["messages"][0]["content"]
     assert "the runbook is in docs/oncall.md" in prompt and "ask Sam before Friday" in prompt
     assert "Notes from the team" in (team.state_dir / task["work_file"]).read_text()
+
+
+def test_backlog_list_shows_note_counts_on_todo_tasks(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("rotate the on-call pager")
+    state.add_task("bare task")
+    state.add_task("old shipped thing")
+    state.save()
+    assert run("backlog", "note", "1", "runbook in docs/oncall.md") == 0
+    assert run("backlog", "note", "1", "ask Sam") == 0
+    assert run("backlog", "note", "3", "was useful") == 0
+    st = State.load(team)
+    st.task(3)["status"] = "review"
+    st.save()
+    capsys.readouterr()
+
+    assert run("backlog") == 0
+    lines = capsys.readouterr().out.splitlines()
+    line = lambda i: next(ln for ln in lines if f"#{i} " in ln)  # noqa: E731
+    assert "📎2" in line(1)
+    assert "📎" not in line(2)
+    assert "📎" not in line(3)  # only todo tasks show the clip
