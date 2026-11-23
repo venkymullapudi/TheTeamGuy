@@ -85,6 +85,9 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("id", type=int)
     b = bsub.add_parser("bump", help="move a task to the top so work --next picks it first")
     b.add_argument("id", type=int)
+    b = bsub.add_parser("effort", help="re-estimate a todo task: 1 (tiny) to 5 (huge) coffees")
+    b.add_argument("id", type=int)
+    b.add_argument("effort", type=int)
     s.add_argument("--all", action="store_true", help="include finished tasks")
 
     s = sub.add_parser("onboard", help="run the guy's onboarding quests")
@@ -417,6 +420,32 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             state.bump_task(t)
             state.save()
             print(f"⏫ Bumped #{t['id']} to the top: {t['title']}. {team.guy}: \"Say no more, that's next.\"")
+            return 0
+        if args.backlog_cmd == "effort":
+            t = state.task(args.id)
+            if not t:
+                print(f"No task #{args.id}.", file=sys.stderr)
+                return 1
+            if t["status"] != "todo":
+                print(f"#{t['id']} is {t['status']}, not todo. Too late to re-estimate, the coffee's been drunk.",
+                      file=sys.stderr)
+                return 1
+            if not 1 <= args.effort <= 5:
+                print("Effort goes from 1 (tiny) to 5 (huge). ☕ to ☕☕☕☕☕", file=sys.stderr)
+                return 1
+            old, old_xp = int(t["effort"]), State.task_xp(t)
+            if args.effort == old:
+                print(f"🤷 #{t['id']} is already {persona.coffee(old)}. {team.guy}: \"Nailed the estimate the first time.\"")
+                return 0
+            t["effort"] = args.effort
+            state.save()
+            arrow = "📈" if args.effort > old else "📉"
+            print(f"{arrow} Re-estimated #{t['id']} {t['title']}: {persona.coffee(old)} → {persona.coffee(args.effort)}"
+                  f"  (+{old_xp} → +{State.task_xp(t)} XP)")
+            if args.effort > 3 and args.effort > old:
+                print(persona.c(f"   {team.guy}: \"{persona.effort_quip(args.effort)}\"", "yellow"))
+            elif args.effort < old:
+                print(persona.c(f"   {team.guy}: \"Smaller than it looked. My favourite kind.\"", "dim"))
             return 0
         icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "review": "👀", "done": "✅"}
         shown = state.tasks if args.all else state.open_tasks()

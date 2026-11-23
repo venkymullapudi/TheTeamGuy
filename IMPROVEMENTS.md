@@ -16,8 +16,7 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Re-estimate: `teamguy backlog effort <id> N` changes a todo task's effort
-  (and so its XP) with a cheeky comment when it grows past 3 ☕.
+_(empty: add ideas here)_
 
 ## Done
 
@@ -60,3 +59,5 @@ _(empty: the loop takes from Next)_
   recap names the oldest one. `State.review_age` counts the days.
 - [x] Unblock: `teamguy unblock <id> "note"` moves a 🧱 blocked task back to todo;
   the retry's prompt and work file carry the notes, and blocked `work` runs hint at it.
+- [x] Re-estimate: `teamguy backlog effort <id> N` changes a todo task's effort
+  (1–5 ☕) and shows the XP change; growing past 3 ☕ gets a cheeky quip.

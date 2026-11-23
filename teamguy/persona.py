@@ -34,6 +34,13 @@ def coffee(n: int) -> str:
     return "☕" * n
 
 
+def effort_quip(effort: int) -> str:
+    """A cheeky line for when a task's estimate grows past 3 coffees."""
+    if effort >= 5:
+        return "Five coffees. Telling my family I'll see them at the retro."
+    return "Four coffees? This 'quick fix' has a sequel."
+
+
 def _rng(team: Team, *salt: object) -> random.Random:
     seed = "|".join([team.name, *map(str, salt)])
     return random.Random(int(hashlib.sha256(seed.encode()).hexdigest(), 16))

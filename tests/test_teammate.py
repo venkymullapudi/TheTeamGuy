@@ -673,6 +673,36 @@ def test_backlog_bump_puts_a_task_first_in_line(team, state, capsys):
     assert loaded.add_task("four")["id"] == 4  # ids stay unique after reordering
 
 
+def test_backlog_effort_reestimates_a_todo(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("quick fix", 2)
+    state.add_task("shipped thing", 2)["status"] = "review"
+    state.save()
+    xp_before = State.task_xp(State.load(team).task(1))
+
+    assert run("backlog", "effort", "1", "3") == 0
+    out = capsys.readouterr().out
+    assert "☕☕ → ☕☕☕" in out and "XP" in out and "sequel" not in out
+    assert State.load(team).task(1)["effort"] == 3
+    assert State.task_xp(State.load(team).task(1)) > xp_before
+
+    assert run("backlog", "effort", "1", "4") == 0
+    assert "sequel" in capsys.readouterr().out  # past 3 coffees gets cheeky
+    assert run("backlog", "effort", "1", "5") == 0
+    assert "retro" in capsys.readouterr().out
+    assert run("backlog", "effort", "1", "1") == 0
+    assert "Smaller than it looked" in capsys.readouterr().out
+    assert run("backlog", "effort", "1", "1") == 0
+    assert "already" in capsys.readouterr().out
+
+    assert run("backlog", "effort", "1", "9") == 1  # out of range
+    assert run("backlog", "effort", "2", "3") == 1  # in review: too late
+    assert run("backlog", "effort", "99", "3") == 1
+    assert State.load(team).task(1)["effort"] == 1
+    assert State.load(team).task(2)["effort"] == 2
+
+
 def test_stale_reviews_get_nagged(team, state, capsys):
     from teamguy import fun
 
