@@ -196,6 +196,9 @@ def work_on(team: Team, state: State, brain, task: Dict[str, Any], out: Out = pr
     if locked:
         prompt += "\nCrew you can't use yet (still earning trust): " + ", ".join(
             f"{m.name} (unlocks at L{m.min_level})" for m in locked)
+    notes = task.get("notes") or []
+    if notes:
+        prompt += "\nA teammate left notes on this task. Use them:\n" + "\n".join(f"- {n['note']}" for n in notes)
     feedback = task.get("feedback") or []
     if feedback:
         prompt += "\nA teammate reviewed an earlier attempt and sent it back. Address this feedback:\n" + "\n".join(
@@ -259,6 +262,9 @@ def render_work_file(team: Team, report: WorkReport) -> str:
         report.summary or "(none)",
         "",
     ]
+    notes = task.get("notes") or []
+    if notes:
+        lines += ["## Notes from the team", ""] + [f"- 📎 {n['note']}" for n in notes] + [""]
     feedback = task.get("feedback") or []
     if feedback:
         lines += ["## Review feedback addressed", ""] + [f"- {f['why']}" for f in feedback] + [""]

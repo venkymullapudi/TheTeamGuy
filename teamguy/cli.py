@@ -91,6 +91,9 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("rename", help="reword a todo or blocked task")
     b.add_argument("id", type=int)
     b.add_argument("title", nargs="+")
+    b = bsub.add_parser("note", help="pin extra context to a todo task; the next attempt reads it")
+    b.add_argument("id", type=int)
+    b.add_argument("note", nargs="+")
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
     b.add_argument("words", nargs="+")
     s.add_argument("--all", action="store_true", help="include finished tasks")
@@ -472,6 +475,27 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             state.rename_task(t, new)
             state.save()
             print(f"✏️  Renamed #{t['id']}: {old} → {new}. {team.guy}: \"Ah, so THAT's what we meant.\"")
+            return 0
+        if args.backlog_cmd == "note":
+            t = state.task(args.id)
+            if not t:
+                print(f"No task #{args.id}.", file=sys.stderr)
+                return 1
+            if t["status"] != "todo":
+                hint = {"blocked": f' Try: teamguy unblock {t["id"]} "..."',
+                        "review": f' Try: teamguy reject {t["id"]} "..."'}.get(t["status"], "")
+                print(f"#{t['id']} is {t['status']}, not todo. Notes go on work that hasn't started yet.{hint}",
+                      file=sys.stderr)
+                return 1
+            note = " ".join(args.note).strip()
+            if not note:
+                print("An empty note? Bold. Say something useful, even \"good luck\".", file=sys.stderr)
+                return 1
+            state.note_task(t, note)
+            state.save()
+            n = len(t["notes"])
+            print(f"📎 Pinned a note to #{t['id']} {t['title']} ({n} note{'s' if n != 1 else ''}). "
+                  f"{team.guy}: \"Got it, reading that before I start.\"")
             return 0
         icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "review": "👀", "done": "✅"}
         if args.backlog_cmd == "find":

@@ -144,6 +144,10 @@ class State:
         task.setdefault("renamed", []).append({"at": _now(), "was": task["title"]})
         task["title"] = title.strip()
 
+    def note_task(self, task: Dict[str, Any], note: str) -> None:
+        """Pin extra context to a task; the next work attempt reads every note."""
+        task.setdefault("notes", []).append({"at": _now(), "note": note.strip()})
+
     def find_tasks(self, words: List[str]) -> List[Dict[str, Any]]:
         """Tasks of any status whose title, old titles or summary contain every word (case-insensitive)."""
         needles = [w.lower() for w in words if w.strip()]

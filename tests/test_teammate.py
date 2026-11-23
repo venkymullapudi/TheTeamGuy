@@ -782,3 +782,35 @@ def test_backlog_find_searches_any_status(team, state, capsys):
 
     assert run("backlog", "find", "kubernetes") == 0
     assert "Nothing matches" in capsys.readouterr().out
+
+
+def test_backlog_note_pins_context_for_the_next_attempt(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("rotate the on-call pager")
+    state.add_task("stuck thing")["status"] = "blocked"
+    state.add_task("shipped thing")["status"] = "review"
+    state.save()
+
+    assert run("backlog", "note", "1", "the", "runbook", "is", "in", "docs/oncall.md") == 0
+    assert "📎 Pinned a note to #1" in capsys.readouterr().out
+    assert run("backlog", "note", "1", "ask Sam before Friday") == 0
+    assert "(2 notes)" in capsys.readouterr().out
+    assert [n["note"] for n in State.load(team).task(1)["notes"]] == ["the runbook is in docs/oncall.md",
+                                                                      "ask Sam before Friday"]
+
+    assert run("backlog", "note", "2", "x") == 1
+    assert "teamguy unblock 2" in capsys.readouterr().err
+    assert run("backlog", "note", "3", "x") == 1
+    assert "teamguy reject 3" in capsys.readouterr().err
+    assert run("backlog", "note", "1", "   ") == 1
+    assert run("backlog", "note", "99", "x") == 1
+    assert len(State.load(team).task(1)["notes"]) == 2
+
+    fresh = State.load(team)
+    task = fresh.task(1)
+    client = FakeClient([NS(stop_reason="refusal", content=[])])
+    work_on(team, fresh, ClaudeBrain(client=client), task, out=quiet)
+    prompt = client.requests[0]["messages"][0]["content"]
+    assert "the runbook is in docs/oncall.md" in prompt and "ask Sam before Friday" in prompt
+    assert "Notes from the team" in (team.state_dir / task["work_file"]).read_text()

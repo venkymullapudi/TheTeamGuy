@@ -16,8 +16,10 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Task notes: `teamguy backlog note <id> "..."` attaches context to a todo
-  task that the guy's work prompt picks up, without a reject/unblock round-trip.
+- [ ] Show notes: `teamguy backlog` marks todo tasks that carry notes with a 📎N
+  count, so you can see which ones already have context pinned.
+- [ ] Backlog stats: `teamguy backlog --stats` prints counts by status plus total
+  coffees left in todo, with a quip about how many days of caffeine that is.
 
 ## Done
 
@@ -67,3 +69,5 @@ _(empty: the loop takes from Next)_
   task (old names kept under `renamed`); review/done tasks keep their names.
 - [x] Backlog search: `teamguy backlog find <words>` lists tasks of any status
   whose title, old names or summary contain every word (case-insensitive).
+- [x] Task notes: `teamguy backlog note <id> "..."` pins context to a todo task;
+  the work prompt and work file include every note (blocked/review get a hint).
