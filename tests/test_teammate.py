@@ -837,3 +837,36 @@ def test_backlog_list_shows_note_counts_on_todo_tasks(team, state, capsys):
     assert "📎2" in line(1)
     assert "📎" not in line(2)
     assert "📎" not in line(3)  # only todo tasks show the clip
+
+
+def test_backlog_stats_counts_statuses_and_coffees(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    assert run("backlog", "--stats") == 0
+    out = capsys.readouterr().out
+    assert "0 coffees left in todo" in out and "nap" in out
+
+    state.add_task("big one", effort=5)
+    state.add_task("medium", effort=3)
+    state.add_task("small", effort=1)
+    shipped = state.add_task("shipped", effort=4)
+    state.finish_task(shipped, "done", "done and dusted")
+    state.task(3)["status"] = "blocked"
+    state.save()
+
+    assert run("backlog", "--stats") == 0
+    lines = capsys.readouterr().out.splitlines()
+    row = lambda k: next(ln for ln in lines if f" {k} " in ln)  # noqa: E731
+    assert row("todo").split()[-1] == "2"
+    assert row("blocked").split()[-1] == "1"
+    assert row("done").split()[-1] == "1"
+    assert row("total").split()[-1] == "4"
+    coffee_line = next(ln for ln in lines if "left in todo" in ln)
+    assert "8 coffees" in coffee_line and "2.0 days" in coffee_line
+
+
+def test_caffeine_quip_scales_with_the_pile():
+    from teamguy import persona
+    assert "long lunch" in persona.caffeine_quip(3)
+    assert "~2.5 days" in persona.caffeine_quip(10)
+    assert "bulk" in persona.caffeine_quip(40)

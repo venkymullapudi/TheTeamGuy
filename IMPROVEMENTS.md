@@ -16,8 +16,7 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Backlog stats: `teamguy backlog --stats` prints counts by status plus total
-  coffees left in todo, with a quip about how many days of caffeine that is.
+_(empty: add ideas here)_
 
 ## Done
 
@@ -71,3 +70,5 @@ _(empty: the loop takes from Next)_
   the work prompt and work file include every note (blocked/review get a hint).
 - [x] Show notes: `teamguy backlog` marks todo tasks that carry notes with a 📎N
   count (review/done/blocked stay clean).
+- [x] Backlog stats: `teamguy backlog --stats` counts tasks by status (plus a
+  total) and sums the ☕ left in todo, quipping how many days of caffeine that is (4 ☕/day).

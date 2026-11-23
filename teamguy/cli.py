@@ -97,6 +97,7 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
     b.add_argument("words", nargs="+")
     s.add_argument("--all", action="store_true", help="include finished tasks")
+    s.add_argument("--stats", action="store_true", help="counts by status and coffees left in todo")
 
     s = sub.add_parser("onboard", help="run the guy's onboarding quests")
     s.add_argument("--status", action="store_true", help="just show progress")
@@ -510,6 +511,19 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 if t.get("summary"):
                     summary = " ".join(str(t["summary"]).split())
                     print(persona.c(f"        {summary[:100] + '…' if len(summary) > 100 else summary}", "dim"))
+            return 0
+        if args.stats:
+            order = ["todo", "doing", "blocked", "review", "done"]
+            counts = {k: 0 for k in order}
+            for t in state.tasks:
+                counts[t["status"]] = counts.get(t["status"], 0) + 1
+            print(persona.c(f"📊 {team.guy}'s backlog by the numbers", "bold"))
+            for k in order + sorted(set(counts) - set(order)):
+                print(f"  {icons.get(k, '?')} {k:<8} {counts[k]}")
+            print(f"  🧮 total    {len(state.tasks)}")
+            coffees = sum(int(t.get("effort") or 0) for t in state.tasks if t["status"] == "todo")
+            print(f"  ☕ {coffees} coffee{'s' if coffees != 1 else ''} left in todo. "
+                  f"{team.guy}: \"{persona.caffeine_quip(coffees)}\"")
             return 0
         shown = state.tasks if args.all else state.open_tasks()
         print(persona.c(f"{team.guy}'s backlog", "bold"))

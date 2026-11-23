@@ -41,6 +41,21 @@ def effort_quip(effort: int) -> str:
     return "Four coffees? This 'quick fix' has a sequel."
 
 
+COFFEES_PER_DAY = 4
+
+
+def caffeine_quip(coffees: int) -> str:
+    """How many workdays of caffeine the todo pile adds up to (4 ☕ a day)."""
+    if coffees <= 0:
+        return "Zero coffees owed. I could take a nap. I won't, but I could."
+    days = coffees / COFFEES_PER_DAY
+    if days <= 1:
+        return "Under a day of caffeine. Basically a long lunch."
+    if days <= 5:
+        return f"That's ~{days:.1f} days of caffeine. Manageable, if the espresso machine holds."
+    return f"That's ~{days:.1f} days of caffeine. Somebody order the beans in bulk."
+
+
 def _rng(team: Team, *salt: object) -> random.Random:
     seed = "|".join([team.name, *map(str, salt)])
     return random.Random(int(hashlib.sha256(seed.encode()).hexdigest(), 16))
