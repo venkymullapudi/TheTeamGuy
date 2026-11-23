@@ -144,6 +144,19 @@ class State:
         task.setdefault("renamed", []).append({"at": _now(), "was": task["title"]})
         task["title"] = title.strip()
 
+    def find_tasks(self, words: List[str]) -> List[Dict[str, Any]]:
+        """Tasks of any status whose title, old titles or summary contain every word (case-insensitive)."""
+        needles = [w.lower() for w in words if w.strip()]
+        if not needles:
+            return []
+        hits = []
+        for t in self.tasks:
+            hay = " ".join([t.get("title", ""), t.get("summary") or ""]
+                           + [r.get("was", "") for r in t.get("renamed", [])]).lower()
+            if all(n in hay for n in needles):
+                hits.append(t)
+        return hits
+
     def finish_task(self, task: Dict[str, Any], status: str, summary: str) -> None:
         task["status"] = status
         task["summary"] = summary

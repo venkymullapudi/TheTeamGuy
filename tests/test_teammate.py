@@ -755,3 +755,30 @@ def test_stale_reviews_get_nagged(team, state, capsys):
     assert main(["-f", str(team.base_dir / "team.yaml"), "backlog"]) == 0
     out = capsys.readouterr().out
     assert "cobwebs forming" in out and out.count("days") == 2  # the fresh one isn't nagged
+
+
+def test_backlog_find_searches_any_status(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("fix the Login redirect")
+    done = state.add_task("deploy dashboards")
+    state.finish_task(done, "done", "Wired the login metrics into Grafana.")
+    old = state.add_task("flaky thing")
+    state.rename_task(old, "quarantine flaky test")
+    state.add_task("write docs")
+    state.save()
+
+    assert run("backlog", "find", "LOGIN") == 0
+    out = capsys.readouterr().out
+    assert "2 tasks" in out and "#1" in out and "#2" in out and "#4" not in out
+    assert "Grafana" in out and "done" in out
+
+    assert run("backlog", "find", "login", "grafana") == 0  # every word must match
+    out = capsys.readouterr().out
+    assert "1 task " in out and "#2" in out and "#1 " not in out
+
+    assert run("backlog", "find", "flaky", "thing") == 0  # old names still count
+    assert "#3" in capsys.readouterr().out
+
+    assert run("backlog", "find", "kubernetes") == 0
+    assert "Nothing matches" in capsys.readouterr().out

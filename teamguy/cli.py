@@ -91,6 +91,8 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("rename", help="reword a todo or blocked task")
     b.add_argument("id", type=int)
     b.add_argument("title", nargs="+")
+    b = bsub.add_parser("find", help="search tasks of any status by title or summary")
+    b.add_argument("words", nargs="+")
     s.add_argument("--all", action="store_true", help="include finished tasks")
 
     s = sub.add_parser("onboard", help="run the guy's onboarding quests")
@@ -472,6 +474,19 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(f"✏️  Renamed #{t['id']}: {old} → {new}. {team.guy}: \"Ah, so THAT's what we meant.\"")
             return 0
         icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "review": "👀", "done": "✅"}
+        if args.backlog_cmd == "find":
+            query = " ".join(args.words).strip()
+            hits = state.find_tasks(query.split())
+            if not hits:
+                print(f"🔍 Nothing matches \"{query}\". {team.guy}: \"Either it never happened, or I'm very good at forgetting.\"")
+                return 0
+            print(persona.c(f"🔍 {len(hits)} task{'s' if len(hits) != 1 else ''} matching \"{query}\"", "bold"))
+            for t in hits:
+                print(f"  {icons.get(t['status'], '?')} #{t['id']:<3} {t['title']}  " + persona.c(t["status"], "dim"))
+                if t.get("summary"):
+                    summary = " ".join(str(t["summary"]).split())
+                    print(persona.c(f"        {summary[:100] + '…' if len(summary) > 100 else summary}", "dim"))
+            return 0
         shown = state.tasks if args.all else state.open_tasks()
         print(persona.c(f"{team.guy}'s backlog", "bold"))
         for t in shown:
