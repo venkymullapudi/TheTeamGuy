@@ -122,6 +122,14 @@ class State:
     def in_review(self) -> List[Dict[str, Any]]:
         return [t for t in self.tasks if t["status"] == "review"]
 
+    @staticmethod
+    def review_age(task: Dict[str, Any], today: Optional[dt.date] = None) -> int:
+        """Whole days a task has been sitting in review (0 if not in review)."""
+        if task.get("status") != "review" or not task.get("finished"):
+            return 0
+        today = today or dt.date.today()
+        return max(0, (today - dt.date.fromisoformat(task["finished"][:10])).days)
+
     def next_task(self) -> Optional[Dict[str, Any]]:
         todo = [t for t in self.tasks if t["status"] == "todo"]
         return todo[0] if todo else None

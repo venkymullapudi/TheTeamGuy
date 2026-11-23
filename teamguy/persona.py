@@ -385,3 +385,12 @@ def agent_markdown(team: Team) -> str:
 
 def _wrap(text: str, indent: int) -> str:
     return textwrap.fill(text, width=78, initial_indent=" " * indent, subsequent_indent=" " * indent)
+
+
+def review_nag(days: int) -> str:
+    """A gentle (then less gentle) nudge for work stuck in review. '' when fresh."""
+    if days >= 5:
+        return f"🕸️ {days} days, cobwebs forming"
+    if days >= 2:
+        return f"⏳ {days} days and counting"
+    return ""

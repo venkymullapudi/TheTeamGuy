@@ -16,7 +16,10 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-_(empty: add ideas here)_
+- [ ] Unblock: `teamguy unblock <id> "note"` moves a 🧱 blocked task back to todo
+  with a note the next attempt sees (like reject, but for blocked work).
+- [ ] Re-estimate: `teamguy backlog effort <id> N` changes a todo task's effort
+  (and so its XP) with a cheeky comment when it grows past 3 ☕.
 
 ## Done
 
@@ -54,3 +57,6 @@ _(empty: add ideas here)_
   `fun.as_of` now also takes an ISO timestamp cutoff.
 - [x] Backlog bump: `teamguy backlog bump <id>` moves a todo task to the front
   of the line so `work --next` picks it first (review/done/blocked can't cut in).
+- [x] Review nudges: tasks sitting in 👀 review for 2+ days get "⏳ N days and
+  counting" (🕸️ cobwebs at 5+) in standup blockers and `teamguy backlog`; the
+  recap names the oldest one. `State.review_age` counts the days.

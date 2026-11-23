@@ -639,3 +639,29 @@ def test_backlog_bump_puts_a_task_first_in_line(team, state, capsys):
     assert run("backlog", "bump", "1") == 1  # in review, can't cut the line
     assert run("backlog", "bump", "99") == 1
     assert loaded.add_task("four")["id"] == 4  # ids stay unique after reordering
+
+
+def test_stale_reviews_get_nagged(team, state, capsys):
+    from teamguy import fun
+
+    mon = dt.date(2026, 11, 16)
+    fresh, stale, ancient = (state.add_task(t) for t in ("fresh", "stale", "ancient"))
+    fresh.update(status="review", finished="2026-11-16T09:00:00")
+    stale.update(status="review", finished="2026-11-13T09:00:00")
+    ancient.update(status="review", finished="2026-11-09T09:00:00")
+    assert [State.review_age(t, mon) for t in (fresh, stale, ancient)] == [0, 3, 7]
+    assert State.review_age({"status": "todo", "finished": "2026-11-01T00:00:00"}, mon) == 0
+
+    blockers = render_update(team, state, mon)
+    assert "#1 fresh is waiting on your review (`teamguy accept 1`)\n" in blockers
+    assert "#2 stale is waiting on your review (`teamguy accept 2`) ⏳ 3 days and counting" in blockers
+    assert "🕸️ 7 days, cobwebs forming" in blockers
+
+    recap = fun.recap(team.guy, state, mon)
+    assert "3 tasks in review" in recap and "Oldest: #3, 7 days." in recap
+
+    fresh["finished"] = dt.datetime.now().isoformat(timespec="seconds")  # backlog ages from the real today
+    state.save()
+    assert main(["-f", str(team.base_dir / "team.yaml"), "backlog"]) == 0
+    out = capsys.readouterr().out
+    assert "cobwebs forming" in out and out.count("days") == 2  # the fresh one isn't nagged

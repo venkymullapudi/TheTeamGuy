@@ -37,8 +37,12 @@ def my_update(team: Team, state: State, day: dt.date) -> Dict[str, List[str]]:
     today = [f"#{t['id']} {t['title']}" for t in state.tasks if t["status"] == "todo"][:3]
     today += [f"{d.emoji} {d.title}" for d in due_on(team, day) if d.cadence not in ("always",)][:2]
     blockers = [f"#{t['id']} {t['title']}" for t in state.tasks if t["status"] == "blocked"]
-    blockers += [f"#{t['id']} {t['title']} is waiting on your review (`teamguy accept {t['id']}`)"
-                 for t in state.in_review()]
+    from .persona import review_nag
+
+    for t in state.in_review():
+        nag = review_nag(State.review_age(t, day))
+        blockers.append(f"#{t['id']} {t['title']} is waiting on your review (`teamguy accept {t['id']}`)"
+                        + (f" {nag}" if nag else ""))
     return {"yesterday": done[-4:], "today": today, "blockers": blockers}
 
 

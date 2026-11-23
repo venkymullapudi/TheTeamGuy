@@ -161,9 +161,15 @@ def recap(guy: str, state: State, today: Optional[dt.date] = None, days: int = R
         lines.append("🏆 New achievements: " + ", ".join(f"{a.emoji} {a.title}" for a in new))
     if on_fire(state, today):
         lines.append("🔥 Status: on fire. Please do not feed the guy more coffee.")
-    waiting = len(state.in_review())
+    review = state.in_review()
+    waiting = len(review)
     if waiting:
-        lines.append(f"👀 Waiting on you: {waiting} task{'s' if waiting != 1 else ''} in review (`teamguy accept <id>`).")
+        line = f"👀 Waiting on you: {waiting} task{'s' if waiting != 1 else ''} in review (`teamguy accept <id>`)."
+        oldest = max(review, key=lambda t: State.review_age(t, today))
+        age = State.review_age(oldest, today)
+        if age >= 2:
+            line += f" Oldest: #{oldest['id']}, {age} days."
+        lines.append(line)
     if not (shipped or xp or standups):
         lines.append("")
         lines.append("Quiet week. He was definitely thinking very hard the whole time.")

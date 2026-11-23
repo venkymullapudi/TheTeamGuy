@@ -403,8 +403,10 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
         shown = state.tasks if args.all else state.open_tasks()
         print(persona.c(f"{team.guy}'s backlog", "bold"))
         for t in shown:
+            nag = persona.review_nag(State.review_age(t))
             print(f"  {icons.get(t['status'], '?')} #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}  "
-                  + persona.c(f"from {t['source']}", "dim"))
+                  + persona.c(f"from {t['source']}", "dim")
+                  + (persona.c(f"  {nag}", "yellow") if nag else ""))
         if not shown:
             print("  Empty! Add one: teamguy backlog add \"...\"")
         return 0

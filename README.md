@@ -174,6 +174,10 @@ XP is earned, not self-reported: finished work lands in 👀 review, and only
 back to the backlog, and the guy sees every note on the next attempt. Standup,
 onboarding and kudos XP stay automatic.
 
+Work left in review doesn't get forgotten: after 2 days the standup blocker,
+`teamguy backlog` and `teamguy recap` start nudging (⏳ "3 days and counting"),
+and after 5 days the guy notes the 🕸️ cobwebs.
+
 XP: **20 × effort** per accepted task, **+5** per crew member worked with,
 **+10** per standup, **+5** per action item taken, **+15** per kudos, and **+5**
 even for a blocked task (they learned something). Each level also gives the guy
