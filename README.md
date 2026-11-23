@@ -244,7 +244,7 @@ teamguy init SIM
 | `teamguy accept <id>`       | Sign off on finished work and grant the XP                      |
 | `teamguy reject <id> "why"` | Send it back to todo with feedback for the next attempt         |
 | `teamguy unblock <id> "note"`| Move 🧱 blocked work back to todo with a note the retry sees    |
-| `teamguy backlog [add/drop/bump/effort]`| The guy's task list (`bump <id>` puts a todo first in line, `effort <id> N` re-estimates it) |
+| `teamguy backlog [add/drop/bump/effort/rename]`| The guy's task list (`bump <id>` puts a todo first in line, `effort <id> N` re-estimates it, `rename <id> "..."` rewords a todo or blocked one) |
 | `teamguy level`             | XP, level, what unlocks next, streaks and achievements          |
 | `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |
 | `teamguy kudos "<msg>"`     | Say thanks                                                      |

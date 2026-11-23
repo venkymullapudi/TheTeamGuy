@@ -16,7 +16,10 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-_(empty: add ideas here)_
+- [ ] Backlog search: `teamguy backlog find <words>` lists tasks (any status)
+  whose title or summary matches, so old work is easy to dig up.
+- [ ] Task notes: `teamguy backlog note <id> "..."` attaches context to a todo
+  task that the guy's work prompt picks up, without a reject/unblock round-trip.
 
 ## Done
 
@@ -61,3 +64,6 @@ _(empty: add ideas here)_
   the retry's prompt and work file carry the notes, and blocked `work` runs hint at it.
 - [x] Re-estimate: `teamguy backlog effort <id> N` changes a todo task's effort
   (1–5 ☕) and shows the XP change; growing past 3 ☕ gets a cheeky quip.
+
+- [x] Rename: `teamguy backlog rename <id> "new title"` rewords a todo or blocked
+  task (old names kept under `renamed`); review/done tasks keep their names.

@@ -88,6 +88,9 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("effort", help="re-estimate a todo task: 1 (tiny) to 5 (huge) coffees")
     b.add_argument("id", type=int)
     b.add_argument("effort", type=int)
+    b = bsub.add_parser("rename", help="reword a todo or blocked task")
+    b.add_argument("id", type=int)
+    b.add_argument("title", nargs="+")
     s.add_argument("--all", action="store_true", help="include finished tasks")
 
     s = sub.add_parser("onboard", help="run the guy's onboarding quests")
@@ -446,6 +449,27 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 print(persona.c(f"   {team.guy}: \"{persona.effort_quip(args.effort)}\"", "yellow"))
             elif args.effort < old:
                 print(persona.c(f"   {team.guy}: \"Smaller than it looked. My favourite kind.\"", "dim"))
+            return 0
+        if args.backlog_cmd == "rename":
+            t = state.task(args.id)
+            if not t:
+                print(f"No task #{args.id}.", file=sys.stderr)
+                return 1
+            if t["status"] not in ("todo", "blocked"):
+                print(f"#{t['id']} is {t['status']}, not todo or blocked. The work's already got its name on it.",
+                      file=sys.stderr)
+                return 1
+            new = " ".join(args.title).strip()
+            if not new:
+                print("A task needs a name. Even \"stuff\" is a name.", file=sys.stderr)
+                return 1
+            old = t["title"]
+            if new == old:
+                print(f"🤷 #{t['id']} is already called that. {team.guy}: \"Good name. Keeping it.\"")
+                return 0
+            state.rename_task(t, new)
+            state.save()
+            print(f"✏️  Renamed #{t['id']}: {old} → {new}. {team.guy}: \"Ah, so THAT's what we meant.\"")
             return 0
         icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "review": "👀", "done": "✅"}
         shown = state.tasks if args.all else state.open_tasks()

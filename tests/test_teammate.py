@@ -703,6 +703,34 @@ def test_backlog_effort_reestimates_a_todo(team, state, capsys):
     assert State.load(team).task(2)["effort"] == 2
 
 
+def test_backlog_rename_rewords_todo_and_blocked(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("fix the thing")
+    state.add_task("stuck thing")["status"] = "blocked"
+    state.add_task("shipped thing")["status"] = "review"
+    state.save()
+
+    assert run("backlog", "rename", "1", "fix", "the", "login", "redirect") == 0
+    out = capsys.readouterr().out
+    assert "fix the thing → fix the login redirect" in out
+    t = State.load(team).task(1)
+    assert t["title"] == "fix the login redirect"
+    assert t["renamed"][0]["was"] == "fix the thing"
+    assert run("backlog", "rename", "1", "fix the login redirect") == 0
+    assert "already called that" in capsys.readouterr().out
+    assert len(State.load(team).task(1)["renamed"]) == 1
+
+    assert run("backlog", "rename", "2", "unstick the thing") == 0
+    assert State.load(team).task(2)["title"] == "unstick the thing"
+
+    assert run("backlog", "rename", "3", "new name") == 1  # in review: name's on it
+    assert run("backlog", "rename", "1", "   ") == 1  # blank
+    assert run("backlog", "rename", "99", "x") == 1
+    assert State.load(team).task(3)["title"] == "shipped thing"
+    assert State.load(team).task(1)["title"] == "fix the login redirect"
+
+
 def test_stale_reviews_get_nagged(team, state, capsys):
     from teamguy import fun
 

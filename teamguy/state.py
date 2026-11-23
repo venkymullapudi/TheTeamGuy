@@ -139,6 +139,11 @@ class State:
         self.tasks.remove(task)
         self.tasks.insert(0, task)
 
+    def rename_task(self, task: Dict[str, Any], title: str) -> None:
+        """Reword a task, keeping the old names so the history still makes sense."""
+        task.setdefault("renamed", []).append({"at": _now(), "was": task["title"]})
+        task["title"] = title.strip()
+
     def finish_task(self, task: Dict[str, Any], status: str, summary: str) -> None:
         task["status"] = status
         task["summary"] = summary
