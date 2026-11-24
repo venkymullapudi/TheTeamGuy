@@ -94,6 +94,9 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("note", help="pin extra context to a todo task; the next attempt reads it")
     b.add_argument("id", type=int)
     b.add_argument("note", nargs="+")
+    b = bsub.add_parser("unnote", help="unpin note N from a todo task (no N: list its numbered notes)")
+    b.add_argument("id", type=int)
+    b.add_argument("n", type=int, nargs="?", help="which note, as numbered by unnote <id>")
     bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
     b.add_argument("words", nargs="+")
@@ -498,6 +501,36 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             n = len(t["notes"])
             print(f"📎 Pinned a note to #{t['id']} {t['title']} ({n} note{'s' if n != 1 else ''}). "
                   f"{team.guy}: \"Got it, reading that before I start.\"")
+            return 0
+        if args.backlog_cmd == "unnote":
+            t = state.task(args.id)
+            if not t:
+                print(f"No task #{args.id}.", file=sys.stderr)
+                return 1
+            if t["status"] != "todo":
+                print(f"#{t['id']} is {t['status']}, not todo. Those notes are part of history now.",
+                      file=sys.stderr)
+                return 1
+            notes = t.get("notes") or []
+            if not notes:
+                print(f"🫙 #{t['id']} has no notes to unpin. {team.guy}: \"Clean slate. Love it.\"")
+                return 0
+            if args.n is None or not 1 <= args.n <= len(notes):
+                stream = sys.stdout if args.n is None else sys.stderr
+                if args.n is not None:
+                    print(f"No note {args.n} on #{t['id']}; pick 1 to {len(notes)}.", file=sys.stderr)
+                print(f"📎 Notes on #{t['id']} {t['title']}:", file=stream)
+                for i, n in enumerate(notes, 1):
+                    text = n.get("note", "") if isinstance(n, dict) else str(n)
+                    print(f"  {i}. {text}", file=stream)
+                print(persona.c(f"  (unpin one: teamguy backlog unnote {t['id']} <N>)", "dim"), file=stream)
+                return 0 if args.n is None else 1
+            gone = state.unnote_task(t, args.n - 1)
+            state.save()
+            text = gone.get("note", "") if isinstance(gone, dict) else str(gone)
+            left = len(t.get("notes") or [])
+            print(f"🗑️  Unpinned note {args.n} from #{t['id']}: {text} ({left} left). "
+                  f"{team.guy}: \"Forgetting that on purpose.\"")
             return 0
         if args.backlog_cmd == "next":
             t = state.next_task()

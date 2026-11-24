@@ -816,6 +816,36 @@ def test_backlog_note_pins_context_for_the_next_attempt(team, state, capsys):
     assert "Notes from the team" in (team.state_dir / task["work_file"]).read_text()
 
 
+def test_backlog_unnote_removes_a_pinned_note(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("rotate the on-call pager")
+    state.add_task("shipped thing")["status"] = "review"
+    state.add_task("bare task")
+    state.save()
+    for note in ("runbook in docs/oncall.md", "ask Sam", "wrong, ignore"):
+        assert run("backlog", "note", "1", note) == 0
+    capsys.readouterr()
+
+    assert run("backlog", "unnote", "1") == 0
+    out = capsys.readouterr().out
+    assert "1. runbook in docs/oncall.md" in out and "3. wrong, ignore" in out
+
+    assert run("backlog", "unnote", "1", "7") == 1
+    err = capsys.readouterr().err
+    assert "No note 7" in err and "2. ask Sam" in err
+    assert run("backlog", "unnote", "1", "0") == 1
+
+    assert run("backlog", "unnote", "1", "3") == 0
+    assert "(2 left)" in capsys.readouterr().out
+    assert [n["note"] for n in State.load(team).task(1)["notes"]] == ["runbook in docs/oncall.md", "ask Sam"]
+
+    assert run("backlog", "unnote", "2", "1") == 1
+    assert run("backlog", "unnote", "99", "1") == 1
+    assert run("backlog", "unnote", "3") == 0
+    assert "no notes" in capsys.readouterr().out
+
+
 def test_backlog_list_shows_note_counts_on_todo_tasks(team, state, capsys):
     f = str(team.base_dir / "team.yaml")
     run = lambda *a: main(["-f", f, *a])  # noqa: E731

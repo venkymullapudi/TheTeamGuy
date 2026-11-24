@@ -16,8 +16,6 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Unnote: `teamguy backlog unnote <id> N` removes pinned note N from a todo
-  task (with a list of numbered notes when N is missing or out of range).
 - [ ] Sweep: `teamguy backlog sweep [--days 30]` archives done tasks older than
   N days out of the backlog file (kept in the journal), with a tidy-up quip.
 
@@ -77,3 +75,5 @@ _(empty: the loop takes from Next)_
   total) and sums the ☕ left in todo, quipping how many days of caffeine that is (4 ☕/day).
 - [x] Peek next: `teamguy backlog next` shows the task `work --next` would pick
   (☕, XP, pinned notes, how many wait behind it) without starting it.
+- [x] Unnote: `teamguy backlog unnote <id> N` unpins note N from a todo task;
+  no N (or an out-of-range one) lists the numbered notes.

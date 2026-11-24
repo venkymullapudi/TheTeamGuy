@@ -148,6 +148,10 @@ class State:
         """Pin extra context to a task; the next work attempt reads every note."""
         task.setdefault("notes", []).append({"at": _now(), "note": note.strip()})
 
+    def unnote_task(self, task: Dict[str, Any], index: int) -> Any:
+        """Remove and return the note at a 0-based index."""
+        return task["notes"].pop(index)
+
     def find_tasks(self, words: List[str]) -> List[Dict[str, Any]]:
         """Tasks of any status whose title, old titles or summary contain every word (case-insensitive)."""
         needles = [w.lower() for w in words if w.strip()]
