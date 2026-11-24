@@ -16,7 +16,10 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-_(empty: the next run adds fresh ideas)_
+- [ ] Quick wins: `teamguy backlog quick` lists todo tasks of 1 ☕ (the "I have
+  ten minutes" menu) with their XP and a nudge to bump one.
+- [ ] Swap: `teamguy backlog swap <a> <b>` trades the line positions of two todo
+  tasks (finer than bump/sink), with a do-si-do quip.
 
 ## Done
 
@@ -86,3 +89,5 @@ _(empty: the next run adds fresh ideas)_
   N+ days ago, dustiest first, with a 🕸️ quip and a bump/sink/drop nudge.
 - [x] Unsweep: `teamguy backlog unsweep <id>` brings an archived task back into
   the backlog (still done, back in id order) with a journal entry and a sheepish quip.
+- [x] Roll: `teamguy backlog roll` picks a random todo task and bumps it to the
+  front of the line (🎲 quip; review/done/blocked never roll; one todo is "rigged").

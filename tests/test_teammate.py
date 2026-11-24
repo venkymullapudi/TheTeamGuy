@@ -692,6 +692,38 @@ def test_backlog_sink_sends_a_task_to_the_back(team, state, capsys):
     assert run("backlog", "sink", "99") == 1
 
 
+def test_backlog_roll_bumps_a_random_todo(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    assert run("backlog", "roll") == 0
+    assert "Nothing to roll" in capsys.readouterr().out
+    for title in ("one", "two", "three", "four"):
+        state.add_task(title)
+    state.data["tasks"][3]["status"] = "review"
+    state.save()
+    seen = set()
+    for seed in range(30):
+        assert run("backlog", "roll", "--seed", str(seed)) == 0
+        out = capsys.readouterr().out
+        assert "The dice have spoken" in out
+        first = State.load(team).next_task()
+        assert f"#{first['id']} " in out  # the rolled task is now next in line
+        seen.add(first["id"])
+    assert seen <= {1, 2, 3} and len(seen) > 1  # review never rolls; the dice vary
+    loaded = State.load(team)
+    assert sorted(t["id"] for t in loaded.tasks) == [1, 2, 3, 4]
+    assert loaded.task(4)["status"] == "review"
+
+
+def test_backlog_roll_single_todo_is_rigged(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    state.add_task("lonely")
+    state.save()
+    assert main(["-f", f, "backlog", "roll"]) == 0
+    out = capsys.readouterr().out
+    assert "#1 lonely" in out and "already first" in out and "Rigged" in out
+
+
 def test_backlog_effort_reestimates_a_todo(team, state, capsys):
     f = str(team.base_dir / "team.yaml")
     run = lambda *a: main(["-f", f, *a])  # noqa: E731

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import random
 import sys
 from pathlib import Path
 from typing import List, Optional
@@ -106,6 +107,8 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("stale", help="list todo tasks that have gathered dust for N+ days")
     b.add_argument("--days", type=int, default=14, help="todo tasks created at least this many days ago (default 14)")
     bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
+    b = bsub.add_parser("roll", help="can't decide? roll the dice: a random todo task jumps to the front")
+    b.add_argument("--seed", type=int, default=None, help=argparse.SUPPRESS)
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
     b.add_argument("words", nargs="+")
     s.add_argument("--all", action="store_true", help="include finished tasks")
@@ -605,6 +608,24 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(f"  {team.guy}: \"{persona.stale_quip(len(stale))}\"")
             print(persona.c("  (do it now: teamguy backlog bump <id>  ·  someday: teamguy backlog sink <id>"
                             "  ·  never: teamguy backlog drop <id>)", "dim"))
+            return 0
+        if args.backlog_cmd == "roll":
+            todo = [x for x in state.tasks if x["status"] == "todo"]
+            if not todo:
+                print(f"🎲 Nothing to roll for. {team.guy}: \"{persona.roll_quip(0)}\" "
+                      "Add one: teamguy backlog add \"...\"")
+                return 0
+            t = random.Random(args.seed).choice(todo)
+            if len(todo) > 1 and state.next_task() is not t:
+                state.bump_task(t)
+                state.save()
+                moved = "jumps to the front of the line"
+            else:
+                moved = "was already first in line"
+            print(f"🎲 The dice have spoken: #{t['id']} {t['title']}  {persona.coffee(t['effort'])} {moved}.")
+            print(f"  {team.guy}: \"{persona.roll_quip(len(todo))}\"")
+            how = "teamguy work --next" if state.level.number >= AUTOPICK_LEVEL else f"teamguy work {t['id']}"
+            print(persona.c(f"  (start it: {how}  ·  don't like it? roll again: teamguy backlog roll)", "dim"))
             return 0
         if args.backlog_cmd == "next":
             t = state.next_task()

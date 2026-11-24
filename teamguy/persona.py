@@ -440,6 +440,17 @@ def stale_quip(stale: int) -> str:
     return "This isn't a backlog, it's an archaeology dig. 🦴"
 
 
+def roll_quip(todo: int) -> str:
+    """A dice-rolling line for `teamguy backlog roll`."""
+    if todo <= 0:
+        return "Can't roll dice on an empty table."
+    if todo == 1:
+        return "Rigged dice, honestly. There was only one option."
+    if todo < 6:
+        return "Fate has chosen. I don't argue with fate, it holds grudges."
+    return "Out of all of those? Bold pick, dice. Bold pick."
+
+
 def review_nag(days: int) -> str:
     """A gentle (then less gentle) nudge for work stuck in review. '' when fresh."""
     if days >= 5:
