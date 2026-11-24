@@ -161,6 +161,23 @@ class State:
         today = today or dt.date.today()
         return max(0, (today - dt.date.fromisoformat(task["finished"][:10])).days)
 
+    @staticmethod
+    def task_age(task: Dict[str, Any], today: Optional[dt.date] = None) -> int:
+        """Whole days since a task was created (0 if it has no created stamp)."""
+        if not task.get("created"):
+            return 0
+        today = today or dt.date.today()
+        try:
+            return max(0, (today - dt.date.fromisoformat(str(task["created"])[:10])).days)
+        except ValueError:
+            return 0
+
+    def stale_tasks(self, days: int, today: Optional[dt.date] = None) -> List[Dict[str, Any]]:
+        """Todo tasks created `days`+ days ago, dustiest first."""
+        old = [t for t in self.tasks if t["status"] == "todo" and t.get("created")
+               and self.task_age(t, today) >= max(0, int(days))]
+        return sorted(old, key=lambda t: -self.task_age(t, today))
+
     def next_task(self) -> Optional[Dict[str, Any]]:
         todo = [t for t in self.tasks if t["status"] == "todo"]
         return todo[0] if todo else None

@@ -420,6 +420,17 @@ def sweep_quip(swept: int) -> str:
     return "Marie Kondo would weep. Every one of those sparked joy, then shipped."
 
 
+def stale_quip(stale: int) -> str:
+    """A dusty line for `teamguy backlog stale`."""
+    if stale <= 0:
+        return "No cobwebs here. Everything on my list still has that new-task smell."
+    if stale < 3:
+        return "A little dusty. Bump it, sink it or drop it; I'm not judging. Much."
+    if stale < 8:
+        return "There's a spider living in these. She's named Someday."
+    return "This isn't a backlog, it's an archaeology dig. 🦴"
+
+
 def review_nag(days: int) -> str:
     """A gentle (then less gentle) nudge for work stuck in review. '' when fresh."""
     if days >= 5:

@@ -1009,3 +1009,38 @@ def test_recap_still_counts_swept_tasks(team, state):
     assert state.tasks == []
     assert "#1 shipped and swept" in fun.recap("TheSIMGuy", state, today)
     assert state.sweep_done(0, today) == []
+
+
+def test_backlog_stale_lists_dusty_todos(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    today = dt.date.today()
+    ago = lambda d: (today - dt.timedelta(days=d)).isoformat() + "T09:00:00"  # noqa: E731
+    state.add_task("fossil")["created"] = ago(40)
+    state.add_task("fresh idea")["created"] = ago(2)
+    state.add_task("older fossil")["created"] = ago(60)
+    old_review = state.add_task("old but in review")
+    old_review.update(created=ago(90), status="review")
+    state.save()
+
+    assert run("backlog", "stale") == 0
+    out = capsys.readouterr().out
+    assert "2 dusty todos" in out and "fresh idea" not in out and "in review" not in out
+    assert out.index("older fossil") < out.index("#1 ")  # dustiest first
+    assert "60 days old" in out and "bump" in out and "sink" in out and "drop" in out
+    assert [t["id"] for t in State.load(team).stale_tasks(50)] == [3]
+
+    assert run("backlog", "stale", "--days", "1") == 0
+    assert "3 dusty todos" in capsys.readouterr().out
+    assert run("backlog", "stale", "--days", "100") == 0
+    assert "No todo older than 100 days" in capsys.readouterr().out
+    assert run("backlog", "stale", "--days", "-3") == 1
+    assert "negative" in capsys.readouterr().err
+    assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only
+
+
+def test_task_age_handles_missing_or_odd_created(state):
+    today = dt.date(2026, 11, 24)
+    assert State.task_age({"created": "2026-11-10T08:00:00"}, today) == 14
+    assert State.task_age({}, today) == 0
+    assert State.task_age({"created": "someday"}, today) == 0

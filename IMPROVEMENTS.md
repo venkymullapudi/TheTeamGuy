@@ -16,8 +16,6 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Stale todos: `teamguy backlog stale [--days 14]` lists todo tasks created
-  N+ days ago with a 🕸️ dusty quip and a nudge to bump, sink or drop them.
 - [ ] Unsweep: `teamguy backlog unsweep <id>` brings an archived task back into
   the backlog (still done), for when a sweep was too eager.
 
@@ -85,3 +83,5 @@ _(empty: the loop takes from Next)_
 
 - [x] Sink: `teamguy backlog sink <id>` sends a todo task to the back of the line
   (behind every other todo), the opposite of `bump`; review/done/blocked can't.
+- [x] Stale todos: `teamguy backlog stale [--days 14]` lists todo tasks created
+  N+ days ago, dustiest first, with a 🕸️ quip and a bump/sink/drop nudge.

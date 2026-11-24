@@ -101,6 +101,8 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("n", type=int, nargs="?", help="which note, as numbered by unnote <id>")
     b = bsub.add_parser("sweep", help="archive done tasks older than N days (they stay in the journal and recaps)")
     b.add_argument("--days", type=int, default=30, help="sweep done tasks accepted more than this many days ago (default 30)")
+    b = bsub.add_parser("stale", help="list todo tasks that have gathered dust for N+ days")
+    b.add_argument("--days", type=int, default=14, help="todo tasks created at least this many days ago (default 14)")
     bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
     b.add_argument("words", nargs="+")
@@ -567,6 +569,25 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 print(f"  🗄️  #{t['id']:<3} {t['title']}" + persona.c(f"  accepted {(t.get('accepted') or '?')[:10]}", "dim"))
             print(f"  {team.guy}: \"{persona.sweep_quip(len(swept))}\"")
             print(persona.c("  (still in the journal, recaps and achievements; find them with teamguy backlog find)", "dim"))
+            return 0
+        if args.backlog_cmd == "stale":
+            if args.days < 0:
+                print("--days can't be negative. Tasks from the future aren't dusty yet.", file=sys.stderr)
+                return 1
+            stale = state.stale_tasks(args.days)
+            plural = "s" if args.days != 1 else ""
+            if not stale:
+                print(f"✨ No todo older than {args.days} day{plural}. {team.guy}: \"{persona.stale_quip(0)}\"")
+                return 0
+            print(persona.c(f"🕸️  {len(stale)} dusty todo{'s' if len(stale) != 1 else ''} "
+                            f"(created {args.days}+ day{plural} ago)", "bold"))
+            for t in stale:
+                age = State.task_age(t)
+                print(f"  ⬜ #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}"
+                      + persona.c(f"  {age} day{'s' if age != 1 else ''} old", "dim"))
+            print(f"  {team.guy}: \"{persona.stale_quip(len(stale))}\"")
+            print(persona.c("  (do it now: teamguy backlog bump <id>  ·  someday: teamguy backlog sink <id>"
+                            "  ·  never: teamguy backlog drop <id>)", "dim"))
             return 0
         if args.backlog_cmd == "next":
             t = state.next_task()
