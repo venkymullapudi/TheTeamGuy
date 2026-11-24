@@ -97,6 +97,8 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("unnote", help="unpin note N from a todo task (no N: list its numbered notes)")
     b.add_argument("id", type=int)
     b.add_argument("n", type=int, nargs="?", help="which note, as numbered by unnote <id>")
+    b = bsub.add_parser("sweep", help="archive done tasks older than N days (they stay in the journal and recaps)")
+    b.add_argument("--days", type=int, default=30, help="sweep done tasks accepted more than this many days ago (default 30)")
     bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
     b.add_argument("words", nargs="+")
@@ -392,7 +394,7 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
         return 0
 
     if args.cmd == "show":
-        t = state.task(args.id)
+        t = state.task(args.id) or state.archived_task(args.id)
         if not t:
             print(f"No task #{args.id}.", file=sys.stderr)
             return 1
@@ -532,6 +534,22 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(f"🗑️  Unpinned note {args.n} from #{t['id']}: {text} ({left} left). "
                   f"{team.guy}: \"Forgetting that on purpose.\"")
             return 0
+        if args.backlog_cmd == "sweep":
+            if args.days < 0:
+                print("--days can't be negative. Even I can't sweep the future.", file=sys.stderr)
+                return 1
+            swept = state.sweep_done(args.days)
+            if not swept:
+                print(f"✨ Nothing done older than {args.days} day{'s' if args.days != 1 else ''}. "
+                      f"{team.guy}: \"{persona.sweep_quip(0)}\"")
+                return 0
+            state.save()
+            print(persona.c(f"🧹 Swept {len(swept)} done task{'s' if len(swept) != 1 else ''} into the archive", "bold"))
+            for t in swept:
+                print(f"  🗄️  #{t['id']:<3} {t['title']}" + persona.c(f"  accepted {(t.get('accepted') or '?')[:10]}", "dim"))
+            print(f"  {team.guy}: \"{persona.sweep_quip(len(swept))}\"")
+            print(persona.c("  (still in the journal, recaps and achievements; find them with teamguy backlog find)", "dim"))
+            return 0
         if args.backlog_cmd == "next":
             t = state.next_task()
             if not t:
@@ -574,6 +592,8 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             for k in order + sorted(set(counts) - set(order)):
                 print(f"  {icons.get(k, '?')} {k:<8} {counts[k]}")
             print(f"  🧮 total    {len(state.tasks)}")
+            if state.archive:
+                print(persona.c(f"  🗄️  archived {len(state.archive)} (swept, not counted above)", "dim"))
             coffees = sum(int(t.get("effort") or 0) for t in state.tasks if t["status"] == "todo")
             print(f"  ☕ {coffees} coffee{'s' if coffees != 1 else ''} left in todo. "
                   f"{team.guy}: \"{persona.caffeine_quip(coffees)}\"")

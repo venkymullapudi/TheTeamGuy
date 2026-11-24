@@ -55,7 +55,7 @@ def best_streak(state: State) -> int:
 
 
 def accepted_since(state: State, since: dt.date) -> int:
-    return sum(1 for t in state.tasks if t["status"] == "done" and t.get("accepted", "")[:10] >= since.isoformat())
+    return sum(1 for t in state.done_tasks() if t.get("accepted", "")[:10] >= since.isoformat())
 
 
 def on_fire(state: State, today: Optional[dt.date] = None) -> bool:
@@ -78,7 +78,7 @@ def _kinds(state: State, kind: str) -> int:
 
 
 def _done(state: State) -> List[Dict]:
-    return [t for t in state.tasks if t["status"] == "done"]
+    return state.done_tasks()
 
 
 ACHIEVEMENTS: List[Achievement] = [
@@ -123,13 +123,13 @@ def as_of(state: State, cutoff: Union[dt.date, str]) -> State:
     achievements are new this week."""
     iso = cutoff if isinstance(cutoff, str) else cutoff.isoformat()  # a date or an ISO timestamp
     tasks = []
-    for t in state.tasks:
+    for t in state.archive + state.tasks:
         t = dict(t)
         if t["status"] == "done" and t.get("accepted", "") >= iso:
             t["status"] = "review"
         tasks.append(t)
     log = [e for e in state.data["log"] if e["at"] < iso and e.get("day", e["at"][:10]) < iso]
-    return State(state.path, {**state.data, "tasks": tasks, "log": log})
+    return State(state.path, {**state.data, "tasks": tasks, "archive": [], "log": log})
 
 
 def recap(guy: str, state: State, today: Optional[dt.date] = None, days: int = RECAP_DAYS) -> str:
@@ -139,7 +139,7 @@ def recap(guy: str, state: State, today: Optional[dt.date] = None, days: int = R
     lo, hi = since.isoformat(), today.isoformat()
     in_window = lambda iso: lo <= iso[:10] <= hi  # noqa: E731
 
-    shipped = [t for t in state.tasks if t["status"] == "done" and in_window(t.get("accepted", ""))]
+    shipped = [t for t in state.done_tasks() if in_window(t.get("accepted", ""))]
     xp = sum(int(e.get("xp", 0)) for e in state.data["log"] if in_window(e["at"]))
     standups = sum(1 for d in standup_days(state) if since <= d <= today)
     kudos = sum(1 for e in state.data["log"] if e["kind"] == "kudos" and in_window(e["at"]))

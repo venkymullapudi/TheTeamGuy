@@ -409,6 +409,17 @@ def _wrap(text: str, indent: int) -> str:
     return textwrap.fill(text, width=78, initial_indent=" " * indent, subsequent_indent=" " * indent)
 
 
+def sweep_quip(swept: int) -> str:
+    """A tidy-up line for `teamguy backlog sweep`."""
+    if swept <= 0:
+        return "Already spotless. I'll just polish the empty shelf."
+    if swept < 5:
+        return "A light dusting. The backlog can breathe again."
+    if swept < 15:
+        return "Big tidy-up. Found a sandwich back there, too."
+    return "Marie Kondo would weep. Every one of those sparked joy, then shipped."
+
+
 def review_nag(days: int) -> str:
     """A gentle (then less gentle) nudge for work stuck in review. '' when fresh."""
     if days >= 5:

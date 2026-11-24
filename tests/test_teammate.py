@@ -931,3 +931,62 @@ def test_backlog_next_peeks_without_starting(team, state, capsys):
     assert run("backlog", "next") == 0
     out = capsys.readouterr().out
     assert "second in line" in out and "teamguy work --next" in out
+
+
+def test_backlog_sweep_archives_old_done_tasks(team, state, capsys):
+    from teamguy import fun
+
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    today = dt.date.today()
+    old = (today - dt.timedelta(days=45)).isoformat() + "T10:00:00"
+    recent = (today - dt.timedelta(days=3)).isoformat() + "T10:00:00"
+    a = state.add_task("ancient win")
+    a.update(status="done", accepted=old)
+    b = state.add_task("fresh win")
+    b.update(status="done", accepted=recent)
+    state.add_task("still todo")
+    state.add_task("waiting")["status"] = "review"
+    state.save()
+    assert len(fun.unlocked(State.load(team))) >= 1
+    before = {x.key for x in fun.unlocked(State.load(team))}
+
+    assert run("backlog", "sweep") == 0
+    out = capsys.readouterr().out
+    assert "Swept 1 done task" in out and "#1" in out and "ancient win" in out
+    st = State.load(team)
+    assert [t["id"] for t in st.tasks] == [2, 3, 4]
+    assert [t["id"] for t in st.archive] == [1] and st.archive[0]["archived"]
+    assert st.data["log"][-1]["kind"] == "sweep" and st.data["log"][-1]["tasks"] == [1]
+    assert {x.key for x in fun.unlocked(st)} == before  # achievements survive the sweep
+    assert len(st.done_tasks()) == 2
+    assert st.add_task("new one")["id"] == 5  # archived ids are never reused
+    assert [t["id"] for t in st.find_tasks(["ancient"])] == [1]
+
+    assert run("backlog", "sweep") == 0
+    assert "Nothing done older than 30 days" in capsys.readouterr().out
+
+    assert run("backlog", "sweep", "--days", "1") == 0
+    assert "fresh win" in capsys.readouterr().out
+    st = State.load(team)
+    assert [t["id"] for t in st.archive] == [1, 2]
+    assert [t["status"] for t in st.tasks] == ["todo", "review"]
+
+    assert run("backlog", "--stats") == 0
+    assert "archived 2" in capsys.readouterr().out
+    assert run("backlog", "sweep", "--days", "-1") == 1
+    assert "negative" in capsys.readouterr().err
+    assert run("journal") == 0
+    assert "Swept 1 done task into the archive: #2" in capsys.readouterr().out
+
+
+def test_recap_still_counts_swept_tasks(team, state):
+    from teamguy import fun
+
+    today = dt.date(2026, 11, 20)
+    t = state.add_task("shipped and swept")
+    t.update(status="done", accepted="2026-11-18T09:00:00")
+    assert state.sweep_done(0, today) == [t]
+    assert state.tasks == []
+    assert "#1 shipped and swept" in fun.recap("TheSIMGuy", state, today)
+    assert state.sweep_done(0, today) == []

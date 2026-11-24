@@ -59,6 +59,7 @@ teamguy backlog note 5 "the runbook is in docs/oncall.md"  # 📎 context for a 
 teamguy backlog unnote 5 2                      # 🗑️ unpin note 2 (no number: list them)
 teamguy backlog --stats                         # 📊 counts by status + days of caffeine left
 teamguy backlog next                            # 👉 peek at what work --next picks (notes too)
+teamguy backlog sweep --days 30                 # 🧹 archive done tasks accepted 30+ days ago
 teamguy level                                    # 🎒 L1 Intern  ███████░░░  220/300 XP
 teamguy kudos "saved the release"                # say thanks (+15 XP, they'll remember)
 ```
@@ -251,7 +252,7 @@ teamguy init SIM
 | `teamguy accept <id>`       | Sign off on finished work and grant the XP                      |
 | `teamguy reject <id> "why"` | Send it back to todo with feedback for the next attempt         |
 | `teamguy unblock <id> "note"`| Move 🧱 blocked work back to todo with a note the retry sees    |
-| `teamguy backlog [add/drop/bump/effort/rename/find]`| The guy's task list (`bump <id>` puts a todo first in line, `effort <id> N` re-estimates it, `rename <id> "..."` rewords a todo or blocked one, `note <id> "..."` pins context the next attempt reads, `unnote <id> N` unpins note N (no N lists them), `find <words>` digs up tasks of any status by title or summary, `--stats` counts tasks by status and the coffees left in todo) |
+| `teamguy backlog [add/drop/bump/effort/rename/find]`| The guy's task list (`bump <id>` puts a todo first in line, `effort <id> N` re-estimates it, `rename <id> "..."` rewords a todo or blocked one, `note <id> "..."` pins context the next attempt reads, `unnote <id> N` unpins note N (no N lists them), `find <words>` digs up tasks of any status by title or summary, `--stats` counts tasks by status and the coffees left in todo, `sweep [--days 30]` archives old done tasks; they stay in the journal, recaps, achievements, `find` and `show`) |
 | `teamguy level`             | XP, level, what unlocks next, streaks and achievements          |
 | `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |
 | `teamguy kudos "<msg>"`     | Say thanks                                                      |

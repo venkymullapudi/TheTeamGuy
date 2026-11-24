@@ -43,6 +43,7 @@ class State:
         self.data.setdefault("tasks", [])
         self.data.setdefault("log", [])
         self.data.setdefault("knowledge", {})
+        self.data.setdefault("archive", [])
 
     # ─── persistence ─────────────────────────────────────────────────────
     @classmethod
@@ -103,7 +104,7 @@ class State:
 
     def add_task(self, title: str, effort: int = 2, source: str = "you") -> Dict[str, Any]:
         task = {
-            "id": max((t["id"] for t in self.tasks), default=0) + 1,
+            "id": max((t["id"] for t in self.tasks + self.archive), default=0) + 1,
             "title": title.strip(),
             "effort": max(1, min(5, int(effort))),
             "status": "todo",
@@ -115,6 +116,36 @@ class State:
 
     def task(self, task_id: int) -> Optional[Dict[str, Any]]:
         return next((t for t in self.tasks if t["id"] == task_id), None)
+
+    @property
+    def archive(self) -> List[Dict[str, Any]]:
+        """Done tasks swept out of the backlog; still count for recaps and achievements."""
+        return self.data["archive"]
+
+    def archived_task(self, task_id: int) -> Optional[Dict[str, Any]]:
+        return next((t for t in self.archive if t["id"] == task_id), None)
+
+    def done_tasks(self) -> List[Dict[str, Any]]:
+        """Every accepted task, swept into the archive or not."""
+        return self.archive + [t for t in self.tasks if t["status"] == "done"]
+
+    def sweep_done(self, days: int, today: Optional[dt.date] = None) -> List[Dict[str, Any]]:
+        """Move done tasks accepted more than `days` days ago into the archive
+        and note it in the journal. Returns what was swept."""
+        today = today or dt.date.today()
+        cutoff = (today - dt.timedelta(days=max(0, int(days)))).isoformat()
+        swept = [t for t in self.tasks if t["status"] == "done"
+                 and (t.get("accepted") or t.get("finished") or t.get("created") or "")[:10] < cutoff]
+        if not swept:
+            return []
+        for t in swept:
+            self.tasks.remove(t)
+            t["archived"] = _now()
+            self.archive.append(t)
+        ids = ", ".join(f"#{t['id']}" for t in swept)
+        self.award("sweep", 0, f"Swept {len(swept)} done task{'s' if len(swept) != 1 else ''} into the archive: {ids}",
+                   tasks=[t["id"] for t in swept])
+        return swept
 
     def open_tasks(self) -> List[Dict[str, Any]]:
         return [t for t in self.tasks if t["status"] in ("todo", "blocked", "review")]
@@ -158,7 +189,7 @@ class State:
         if not needles:
             return []
         hits = []
-        for t in self.tasks:
+        for t in self.tasks + self.archive:
             hay = " ".join([t.get("title", ""), t.get("summary") or ""]
                            + [r.get("was", "") for r in t.get("renamed", [])]).lower()
             if all(n in hay for n in needles):
@@ -212,6 +243,6 @@ class State:
 
 
 def stats(state: State) -> Tuple[int, int, int]:
-    done = sum(1 for t in state.tasks if t["status"] == "done")
+    done = len(state.done_tasks())
     standups = sum(1 for e in state.data["log"] if e["kind"] == "standup")
     return done, standups, len(state.open_tasks())

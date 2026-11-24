@@ -16,8 +16,7 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Sweep: `teamguy backlog sweep [--days 30]` archives done tasks older than
-  N days out of the backlog file (kept in the journal), with a tidy-up quip.
+_(empty: add ideas here)_
 
 ## Done
 
@@ -77,3 +76,6 @@ _(empty: the loop takes from Next)_
   (☕, XP, pinned notes, how many wait behind it) without starting it.
 - [x] Unnote: `teamguy backlog unnote <id> N` unpins note N from a todo task;
   no N (or an out-of-range one) lists the numbered notes.
+- [x] Sweep: `teamguy backlog sweep [--days 30]` moves done tasks accepted N+ days
+  ago into an archive (journal entry, tidy-up quip); recaps, achievements, `find`,
+  `show` and `--stats` still see them, and archived ids are never reused.
