@@ -94,6 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("note", help="pin extra context to a todo task; the next attempt reads it")
     b.add_argument("id", type=int)
     b.add_argument("note", nargs="+")
+    bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
     b.add_argument("words", nargs="+")
     s.add_argument("--all", action="store_true", help="include finished tasks")
@@ -497,6 +498,25 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             n = len(t["notes"])
             print(f"📎 Pinned a note to #{t['id']} {t['title']} ({n} note{'s' if n != 1 else ''}). "
                   f"{team.guy}: \"Got it, reading that before I start.\"")
+            return 0
+        if args.backlog_cmd == "next":
+            t = state.next_task()
+            if not t:
+                print(f"🏖️  Nothing in line. {team.guy}: \"Hammock time.\" Add one: teamguy backlog add \"...\"")
+                return 0
+            waiting = sum(1 for x in state.tasks if x["status"] == "todo") - 1
+            print(persona.c(f"👉 Next up for {team.guy}", "bold"))
+            print(f"  ⬜ #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}  +{State.task_xp(t)} XP"
+                  + persona.c(f"  from {t['source']}", "dim"))
+            for n in t.get("notes") or []:
+                text = n.get("note", "") if isinstance(n, dict) else str(n)
+                print(persona.c(f"        📎 {text}", "dim"))
+            behind = f"{waiting} more in line behind it" if waiting else "nothing behind it"
+            if state.level.number >= AUTOPICK_LEVEL:
+                how = "teamguy work --next"
+            else:
+                how = f"teamguy work {t['id']}"
+            print(persona.c(f"  ({behind}. Start it: {how}  ·  cut the line: teamguy backlog bump <id>)", "dim"))
             return 0
         icons = {"todo": "⬜", "doing": "🔄", "blocked": "🧱", "review": "👀", "done": "✅"}
         if args.backlog_cmd == "find":

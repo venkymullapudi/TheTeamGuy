@@ -57,6 +57,7 @@ teamguy reject 3 "missing the rollback steps"    # back to todo; the retry sees 
 teamguy unblock 4 "staging is back up"           # 🧱 blocked -> todo, with a hint for the retry
 teamguy backlog note 5 "the runbook is in docs/oncall.md"  # 📎 context for a todo task's first try
 teamguy backlog --stats                         # 📊 counts by status + days of caffeine left
+teamguy backlog next                            # 👉 peek at what work --next picks (notes too)
 teamguy level                                    # 🎒 L1 Intern  ███████░░░  220/300 XP
 teamguy kudos "saved the release"                # say thanks (+15 XP, they'll remember)
 ```

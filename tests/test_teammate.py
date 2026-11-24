@@ -870,3 +870,34 @@ def test_caffeine_quip_scales_with_the_pile():
     assert "long lunch" in persona.caffeine_quip(3)
     assert "~2.5 days" in persona.caffeine_quip(10)
     assert "bulk" in persona.caffeine_quip(40)
+
+
+def test_backlog_next_peeks_without_starting(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    assert run("backlog", "next") == 0
+    assert "Nothing in line" in capsys.readouterr().out
+
+    shipped = state.add_task("shipped already")
+    state.finish_task(shipped, "done", "done")
+    state.add_task("rotate the pager", effort=3)
+    state.add_task("second in line")
+    state.save()
+    assert run("backlog", "note", "2", "runbook in docs/oncall.md") == 0
+    capsys.readouterr()
+
+    assert run("backlog", "next") == 0
+    out = capsys.readouterr().out
+    assert "#2" in out and "rotate the pager" in out and "second in line" not in out
+    assert "📎 runbook in docs/oncall.md" in out
+    assert "1 more in line" in out and "teamguy work 2" in out  # below autopick level: by id
+    assert State.load(team).task(2)["status"] == "todo"  # peeking doesn't start it
+
+    assert run("backlog", "bump", "3") == 0
+    st = State.load(team)
+    graduate(st, xp=10**6)
+    st.save()
+    capsys.readouterr()
+    assert run("backlog", "next") == 0
+    out = capsys.readouterr().out
+    assert "second in line" in out and "teamguy work --next" in out
