@@ -101,6 +101,8 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("n", type=int, nargs="?", help="which note, as numbered by unnote <id>")
     b = bsub.add_parser("sweep", help="archive done tasks older than N days (they stay in the journal and recaps)")
     b.add_argument("--days", type=int, default=30, help="sweep done tasks accepted more than this many days ago (default 30)")
+    b = bsub.add_parser("unsweep", help="bring an archived task back into the backlog (still done)")
+    b.add_argument("id", type=int)
     b = bsub.add_parser("stale", help="list todo tasks that have gathered dust for N+ days")
     b.add_argument("--days", type=int, default=14, help="todo tasks created at least this many days ago (default 14)")
     bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
@@ -569,6 +571,21 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 print(f"  🗄️  #{t['id']:<3} {t['title']}" + persona.c(f"  accepted {(t.get('accepted') or '?')[:10]}", "dim"))
             print(f"  {team.guy}: \"{persona.sweep_quip(len(swept))}\"")
             print(persona.c("  (still in the journal, recaps and achievements; find them with teamguy backlog find)", "dim"))
+            return 0
+        if args.backlog_cmd == "unsweep":
+            if state.task(args.id):
+                print(f"#{args.id} isn't archived; it's right there in the backlog. "
+                      f"{team.guy}: \"Can't un-tidy what I never tidied.\"", file=sys.stderr)
+                return 1
+            t = state.unsweep_task(args.id)
+            if not t:
+                print(f"No archived task #{args.id}. (teamguy backlog find <words> digs through everything)",
+                      file=sys.stderr)
+                return 1
+            state.save()
+            print(f"📦 Unswept #{t['id']} back into the backlog: {t['title']} (still ✅ done). "
+                  f"{team.guy}: \"{persona.unsweep_quip()}\"")
+            print(persona.c("  (see it with teamguy backlog --all; the next sweep may tidy it away again)", "dim"))
             return 0
         if args.backlog_cmd == "stale":
             if args.days < 0:

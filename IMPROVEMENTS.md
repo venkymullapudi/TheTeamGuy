@@ -16,8 +16,7 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Unsweep: `teamguy backlog unsweep <id>` brings an archived task back into
-  the backlog (still done), for when a sweep was too eager.
+_(empty: the next run adds fresh ideas)_
 
 ## Done
 
@@ -85,3 +84,5 @@ _(empty: the loop takes from Next)_
   (behind every other todo), the opposite of `bump`; review/done/blocked can't.
 - [x] Stale todos: `teamguy backlog stale [--days 14]` lists todo tasks created
   N+ days ago, dustiest first, with a 🕸️ quip and a bump/sink/drop nudge.
+- [x] Unsweep: `teamguy backlog unsweep <id>` brings an archived task back into
+  the backlog (still done, back in id order) with a journal entry and a sheepish quip.

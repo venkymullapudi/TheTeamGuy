@@ -420,6 +420,15 @@ def sweep_quip(swept: int) -> str:
     return "Marie Kondo would weep. Every one of those sparked joy, then shipped."
 
 
+def unsweep_quip() -> str:
+    """A sheepish line for `teamguy backlog unsweep`."""
+    return random.choice([
+        "Fished it out of the bin. Only slightly smells of coffee grounds.",
+        "Okay, okay, I swept a little too hard. Back on the shelf it goes.",
+        "Rescued from the archive. It was making friends down there.",
+    ])
+
+
 def stale_quip(stale: int) -> str:
     """A dusty line for `teamguy backlog stale`."""
     if stale <= 0:

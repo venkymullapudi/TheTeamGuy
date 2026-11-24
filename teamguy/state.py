@@ -147,6 +147,19 @@ class State:
                    tasks=[t["id"] for t in swept])
         return swept
 
+    def unsweep_task(self, task_id: int) -> Optional[Dict[str, Any]]:
+        """Bring an archived task back into the backlog (still done), in id order,
+        and note it in the journal. Returns the task, or None if it isn't archived."""
+        t = self.archived_task(task_id)
+        if t is None:
+            return None
+        self.archive.remove(t)
+        t.pop("archived", None)
+        at = next((i for i, x in enumerate(self.tasks) if x["id"] > t["id"]), len(self.tasks))
+        self.tasks.insert(at, t)
+        self.award("unsweep", 0, f"Unswept #{t['id']} back into the backlog: {t['title']}", tasks=[t["id"]])
+        return t
+
     def open_tasks(self) -> List[Dict[str, Any]]:
         return [t for t in self.tasks if t["status"] in ("todo", "blocked", "review")]
 

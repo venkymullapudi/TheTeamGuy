@@ -1011,6 +1011,39 @@ def test_recap_still_counts_swept_tasks(team, state):
     assert state.sweep_done(0, today) == []
 
 
+def test_backlog_unsweep_brings_archived_task_back(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    old = (dt.date.today() - dt.timedelta(days=45)).isoformat() + "T10:00:00"
+    for title in ("first win", "second win"):
+        state.add_task(title).update(status="done", accepted=old)
+    state.add_task("still todo")
+    state.save()
+    assert run("backlog", "sweep") == 0
+    capsys.readouterr()
+
+    assert run("backlog", "unsweep", "2") == 0
+    out = capsys.readouterr().out
+    assert "Unswept #2" in out and "second win" in out and "still ✅ done" in out
+    st = State.load(team)
+    assert [t["id"] for t in st.archive] == [1]
+    assert [t["id"] for t in st.tasks] == [2, 3]  # back in id order
+    assert st.task(2)["status"] == "done" and "archived" not in st.task(2)
+    assert st.data["log"][-1]["kind"] == "unsweep" and st.data["log"][-1]["xp"] == 0
+    assert len(st.done_tasks()) == 2  # nothing double-counted
+
+    assert run("backlog", "unsweep", "1") == 0
+    assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3]
+    capsys.readouterr()
+
+    assert run("backlog", "unsweep", "3") == 1
+    assert "isn't archived" in capsys.readouterr().err
+    assert run("backlog", "unsweep", "99") == 1
+    assert "No archived task #99" in capsys.readouterr().err
+    assert run("journal") == 0
+    assert "Unswept #1 back into the backlog: first win" in capsys.readouterr().out
+
+
 def test_backlog_stale_lists_dusty_todos(team, state, capsys):
     f = str(team.base_dir / "team.yaml")
     run = lambda *a: main(["-f", f, *a])  # noqa: E731
