@@ -170,6 +170,11 @@ class State:
         self.tasks.remove(task)
         self.tasks.insert(0, task)
 
+    def sink_task(self, task: Dict[str, Any]) -> None:
+        """Move a task to the back of the line, behind every other todo task."""
+        self.tasks.remove(task)
+        self.tasks.append(task)
+
     def rename_task(self, task: Dict[str, Any], title: str) -> None:
         """Reword a task, keeping the old names so the history still makes sense."""
         task.setdefault("renamed", []).append({"at": _now(), "was": task["title"]})

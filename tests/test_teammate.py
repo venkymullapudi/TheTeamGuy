@@ -673,6 +673,25 @@ def test_backlog_bump_puts_a_task_first_in_line(team, state, capsys):
     assert loaded.add_task("four")["id"] == 4  # ids stay unique after reordering
 
 
+def test_backlog_sink_sends_a_task_to_the_back(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    for title in ("one", "two", "three"):
+        state.add_task(title)
+    state.data["tasks"][2]["status"] = "review"
+    state.save()
+    assert run("backlog", "sink", "1") == 0
+    assert "Sank #1" in capsys.readouterr().out
+    loaded = State.load(team)
+    assert [t["id"] for t in loaded.tasks] == [2, 3, 1]
+    assert loaded.next_task()["id"] == 2
+    assert run("backlog", "sink", "1") == 0
+    assert "already last" in capsys.readouterr().out
+    assert [t["id"] for t in State.load(team).tasks] == [2, 3, 1]  # untouched
+    assert run("backlog", "sink", "3") == 1  # in review, no back seat for it
+    assert run("backlog", "sink", "99") == 1
+
+
 def test_backlog_effort_reestimates_a_todo(team, state, capsys):
     f = str(team.base_dir / "team.yaml")
     run = lambda *a: main(["-f", f, *a])  # noqa: E731

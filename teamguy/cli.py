@@ -85,6 +85,8 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("id", type=int)
     b = bsub.add_parser("bump", help="move a task to the top so work --next picks it first")
     b.add_argument("id", type=int)
+    b = bsub.add_parser("sink", help="move a todo task to the back of the line (it can wait)")
+    b.add_argument("id", type=int)
     b = bsub.add_parser("effort", help="re-estimate a todo task: 1 (tiny) to 5 (huge) coffees")
     b.add_argument("id", type=int)
     b.add_argument("effort", type=int)
@@ -435,6 +437,22 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             state.bump_task(t)
             state.save()
             print(f"⏫ Bumped #{t['id']} to the top: {t['title']}. {team.guy}: \"Say no more, that's next.\"")
+            return 0
+        if args.backlog_cmd == "sink":
+            t = state.task(args.id)
+            if not t:
+                print(f"No task #{args.id}.", file=sys.stderr)
+                return 1
+            if t["status"] != "todo":
+                print(f"#{t['id']} is {t['status']}, not todo. Only todo tasks can take a back seat.", file=sys.stderr)
+                return 1
+            todo = [x for x in state.tasks if x["status"] == "todo"]
+            if todo[-1] is t:
+                print(f"🐢 #{t['id']} is already last in line. {team.guy}: \"It can't get any more someday.\"")
+                return 0
+            state.sink_task(t)
+            state.save()
+            print(f"⏬ Sank #{t['id']} to the back: {t['title']}. {team.guy}: \"Filed under someday. No hard feelings.\"")
             return 0
         if args.backlog_cmd == "effort":
             t = state.task(args.id)
