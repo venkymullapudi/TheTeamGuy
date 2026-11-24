@@ -59,6 +59,7 @@ teamguy backlog note 5 "the runbook is in docs/oncall.md"  # 📎 context for a 
 teamguy backlog unnote 5 2                      # 🗑️ unpin note 2 (no number: list them)
 teamguy backlog --stats                         # 📊 counts by status + days of caffeine left
 teamguy backlog next                            # 👉 peek at what work --next picks (notes too)
+teamguy backlog quick                           # ⚡ got ten minutes? the one-coffee todo menu
 teamguy backlog roll                            # 🎲 can't choose? a random todo jumps to the front
 teamguy backlog sweep --days 30                 # 🧹 archive done tasks accepted 30+ days ago
 teamguy backlog unsweep 7                       # 📦 oops, too eager: bring #7 back (still done)
@@ -255,7 +256,7 @@ teamguy init SIM
 | `teamguy accept <id>`       | Sign off on finished work and grant the XP                      |
 | `teamguy reject <id> "why"` | Send it back to todo with feedback for the next attempt         |
 | `teamguy unblock <id> "note"`| Move 🧱 blocked work back to todo with a note the retry sees    |
-| `teamguy backlog [add/drop/bump/sink/roll/effort/rename/find/stale/unsweep]`| The guy's task list (`bump <id>` puts a todo first in line, `sink <id>` sends one to the back, `roll` bumps a random todo to the front when nobody can decide, `effort <id> N` re-estimates it, `rename <id> "..."` rewords a todo or blocked one, `note <id> "..."` pins context the next attempt reads, `unnote <id> N` unpins note N (no N lists them), `find <words>` digs up tasks of any status by title or summary, `--stats` counts tasks by status and the coffees left in todo, `stale [--days 14]` lists dusty todo tasks with a nudge to bump, sink or drop them, `sweep [--days 30]` archives old done tasks; they stay in the journal, recaps, achievements, `find` and `show`; `unsweep <id>` brings one back, still done) |
+| `teamguy backlog [add/drop/bump/sink/roll/quick/effort/rename/find/stale/unsweep]`| The guy's task list (`bump <id>` puts a todo first in line, `sink <id>` sends one to the back, `quick` lists the one-coffee todo tasks and their XP for when you only have ten minutes, `roll` bumps a random todo to the front when nobody can decide, `effort <id> N` re-estimates it, `rename <id> "..."` rewords a todo or blocked one, `note <id> "..."` pins context the next attempt reads, `unnote <id> N` unpins note N (no N lists them), `find <words>` digs up tasks of any status by title or summary, `--stats` counts tasks by status and the coffees left in todo, `stale [--days 14]` lists dusty todo tasks with a nudge to bump, sink or drop them, `sweep [--days 30]` archives old done tasks; they stay in the journal, recaps, achievements, `find` and `show`; `unsweep <id>` brings one back, still done) |
 | `teamguy level`             | XP, level, what unlocks next, streaks and achievements          |
 | `teamguy crew` / `skills`   | Who and what the guy works with (🔓/🔒 by level)                 |
 | `teamguy kudos "<msg>"`     | Say thanks                                                      |

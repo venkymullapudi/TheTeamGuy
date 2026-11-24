@@ -440,6 +440,17 @@ def stale_quip(stale: int) -> str:
     return "This isn't a backlog, it's an archaeology dig. 🦴"
 
 
+def quick_quip(quick: int) -> str:
+    """A ten-minute-menu line for `teamguy backlog quick`."""
+    if quick <= 0:
+        return "Nothing bite-sized on the menu. Everything here needs at least a second coffee."
+    if quick == 1:
+        return "One snack-sized task. Eat it before the meeting starts."
+    if quick < 5:
+        return "A little tapas menu of wins. Pick one, feel productive, tell everyone."
+    return "That's a buffet. A whole buffet of easy XP. Who's hungry? 🍤"
+
+
 def roll_quip(todo: int) -> str:
     """A dice-rolling line for `teamguy backlog roll`."""
     if todo <= 0:

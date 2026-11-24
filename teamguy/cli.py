@@ -107,6 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("stale", help="list todo tasks that have gathered dust for N+ days")
     b.add_argument("--days", type=int, default=14, help="todo tasks created at least this many days ago (default 14)")
     bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
+    bsub.add_parser("quick", help="the 'I have ten minutes' menu: todo tasks of just one coffee")
     b = bsub.add_parser("roll", help="can't decide? roll the dice: a random todo task jumps to the front")
     b.add_argument("--seed", type=int, default=None, help=argparse.SUPPRESS)
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
@@ -608,6 +609,24 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             print(f"  {team.guy}: \"{persona.stale_quip(len(stale))}\"")
             print(persona.c("  (do it now: teamguy backlog bump <id>  ·  someday: teamguy backlog sink <id>"
                             "  ·  never: teamguy backlog drop <id>)", "dim"))
+            return 0
+        if args.backlog_cmd == "quick":
+            quick = state.quick_tasks()
+            if not quick:
+                print(f"☕ No one-coffee tasks in todo. {team.guy}: \"{persona.quick_quip(0)}\"")
+                print(persona.c("  (shrink one: teamguy backlog effort <id> 1  ·  or add one: "
+                                "teamguy backlog add \"...\" --effort 1)", "dim"))
+                return 0
+            xp = sum(State.task_xp(t) for t in quick)
+            print(persona.c(f"⚡ {len(quick)} quick win{'s' if len(quick) != 1 else ''} "
+                            f"(one ☕ each, +{xp} XP on the table)", "bold"))
+            for t in quick:
+                print(f"  ⬜ #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}  +{State.task_xp(t)} XP"
+                      + persona.c(f"  from {t['source']}", "dim"))
+            print(f"  {team.guy}: \"{persona.quick_quip(len(quick))}\"")
+            first = quick[0]
+            print(persona.c(f"  (got ten minutes? teamguy backlog bump {first['id']}  ·  "
+                            f"or just: teamguy work {first['id']})", "dim"))
             return 0
         if args.backlog_cmd == "roll":
             todo = [x for x in state.tasks if x["status"] == "todo"]

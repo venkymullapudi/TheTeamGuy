@@ -16,12 +16,13 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Quick wins: `teamguy backlog quick` lists todo tasks of 1 ☕ (the "I have
-  ten minutes" menu) with their XP and a nudge to bump one.
 - [ ] Swap: `teamguy backlog swap <a> <b>` trades the line positions of two todo
   tasks (finer than bump/sink), with a do-si-do quip.
 
 ## Done
+
+- [x] Quick wins: `teamguy backlog quick` lists one-coffee todo tasks in line
+  order with their XP, the total on the table, and a nudge to bump one.
 
 - [x] `team.yaml` with all the guy's duties; `The<Team>Guy` naming.
 - [x] Crew (llm / command / claude-code), skills, work loop, standups,

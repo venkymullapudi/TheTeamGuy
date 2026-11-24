@@ -724,6 +724,28 @@ def test_backlog_roll_single_todo_is_rigged(team, state, capsys):
     assert "#1 lonely" in out and "already first" in out and "Rigged" in out
 
 
+def test_backlog_quick_lists_one_coffee_todos(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    assert run("backlog", "quick") == 0
+    out = capsys.readouterr().out
+    assert "No one-coffee tasks" in out and "effort <id> 1" in out
+    state.add_task("typo fix", 1)
+    state.add_task("big refactor", 4)
+    state.add_task("bump a dep", 1)
+    state.add_task("tiny but in review", 1)["status"] = "review"
+    state.save()
+
+    assert run("backlog", "quick") == 0
+    out = capsys.readouterr().out
+    assert "2 quick wins" in out and "+40 XP on the table" in out
+    assert "big refactor" not in out and "in review" not in out
+    assert out.index("#1 ") < out.index("#3 ")  # line order
+    assert "backlog bump 1" in out and "tapas" in out
+    assert [t["id"] for t in State.load(team).quick_tasks()] == [1, 3]
+    assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only
+
+
 def test_backlog_effort_reestimates_a_todo(team, state, capsys):
     f = str(team.base_dir / "team.yaml")
     run = lambda *a: main(["-f", f, *a])  # noqa: E731

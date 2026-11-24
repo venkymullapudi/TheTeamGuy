@@ -191,6 +191,10 @@ class State:
                and self.task_age(t, today) >= max(0, int(days))]
         return sorted(old, key=lambda t: -self.task_age(t, today))
 
+    def quick_tasks(self) -> List[Dict[str, Any]]:
+        """Todo tasks of a single coffee, in line order: the ten-minute menu."""
+        return [t for t in self.tasks if t["status"] == "todo" and int(t.get("effort") or 0) <= 1]
+
     def next_task(self) -> Optional[Dict[str, Any]]:
         todo = [t for t in self.tasks if t["status"] == "todo"]
         return todo[0] if todo else None
