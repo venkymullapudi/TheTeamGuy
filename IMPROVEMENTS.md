@@ -16,12 +16,13 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Line by tag: `teamguy backlog line --mine <word>` shows only todo tasks
-  whose title mentions the word, keeping their real seats and coffees-until.
 - [ ] Coffee forecast: `teamguy backlog line --per-day N` groups the line into
   days ("Mon", "Tue", ...) of N coffees each, so you can see when the tail lands.
 
 ## Done
+
+- [x] Line by tag: `teamguy backlog line --mine <word>` shows only todo tasks whose
+  title mentions the word (case-insensitive), keeping real seats, waits and the --coffees cut-off.
 
 - [x] Coffee budget: `teamguy backlog line --coffees N` draws a ☕ cut-off where
   today's N coffees run out and says how many tasks fit vs. wait for tomorrow.

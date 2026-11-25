@@ -119,6 +119,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="stop the list at this task and say how many coffees stand before it")
     b.add_argument("--coffees", type=int, default=None, metavar="N",
                    help="today's coffee budget: mark where N coffees run out")
+    b.add_argument("--mine", default=None, metavar="WORD",
+                   help="only tasks whose title mentions WORD (seats and waits stay real)")
     b = bsub.add_parser("roll", help="can't decide? roll the dice: a random todo task jumps to the front")
     b.add_argument("--seed", type=int, default=None, help=argparse.SUPPRESS)
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
@@ -702,29 +704,50 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 stop = todo.index(t) + 1
                 todo = todo[:stop]
             total = sum(int(x.get("effort") or 0) for x in todo)
+            word = (args.mine or "").strip().lower()
+            if args.mine is not None and not word:
+                print("--mine needs a word to look for. Even 'bug' will do. 🔎", file=sys.stderr)
+                return 1
+
+            def shown(task):
+                return not word or word in str(task.get("title", "")).lower()
+
+            mine = [x for x in todo if shown(x)]
+            if word and not mine:
+                print(f"🔎 Nobody in line mentions '{args.mine}'. {team.guy}: \"{persona.mine_quip(0)}\"")
+                return 0
             if stop is not None:
                 ahead = total - int(todo[-1].get("effort") or 0)
                 print(persona.c(f"🚶 Line up to #{todo[-1]['id']}: seat {stop}, "
                                 f"{stop - 1} task{'s' if stop != 2 else ''} ahead", "bold"))
+            elif word:
+                print(persona.c(f"🔎 {team.guy}'s line, just '{args.mine}': {len(mine)} of {len(todo)} "
+                                f"task{'s' if len(todo) != 1 else ''} (seats are the real ones)", "bold"))
             else:
                 print(persona.c(f"🚶 {team.guy}'s line: {len(todo)} task{'s' if len(todo) != 1 else ''}, "
                                 f"{total} coffee{'s' if total != 1 else ''} deep", "bold"))
             before = 0
             cut = None  # seat of the first task today's coffees won't reach
+            marked = False  # cut-off marker printed yet?
             for i, t in enumerate(todo, 1):
                 effort = int(t.get("effort") or 0)
                 if cut is None and args.coffees is not None and before + effort > args.coffees:
                     cut = i
+                if shown(t) and cut is not None and not marked:
+                    marked = True
                     print(persona.c(f"  ☕ cut-off: {args.coffees} coffee{'s' if args.coffees != 1 else ''} "
                                     "run out here. You won't reach these today.", "yellow"))
                 wait = "up next" if before == 0 else f"after {before} ☕"
-                print(f"  {i:>2}. #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}"
-                      + persona.c(f"  {wait}", "dim"))
+                if shown(t):
+                    print(f"  {i:>2}. #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}"
+                          + persona.c(f"  {wait}", "dim"))
                 before += effort
             if args.coffees is not None:
-                made = len(todo) if cut is None else cut - 1
-                used = sum(int(x.get("effort") or 0) for x in todo[:made])
-                left = len(todo) - made
+                reach = todo if cut is None else todo[:cut - 1]
+                fits = [x for x in reach if shown(x)]
+                made = len(fits)
+                used = sum(int(x.get("effort") or 0) for x in fits)
+                left = len(mine) - made
                 print(f"  ☕ Today's {args.coffees}: {made} task{'s' if made != 1 else ''} "
                       f"({used} coffee{'s' if used != 1 else ''}) fit"
                       + (f", {left} wait for tomorrow." if left else ", and the whole line fits. 🎉"))
@@ -739,6 +762,10 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 if stop > 1:
                     print(persona.c(f"  (cut the line: teamguy backlog bump {t['id']}  ·  "
                                     f"or teamguy backlog move {t['id']} <pos>)", "dim"))
+                return 0
+            if word:
+                print(f"  {team.guy}: \"{persona.mine_quip(len(mine))}\"")
+                print(persona.c("  (the rest of the line is hiding: teamguy backlog line)", "dim"))
                 return 0
             print(f"  {team.guy}: \"{persona.line_quip(total)}\"")
             print(persona.c("  (reshuffle: teamguy backlog move <id> <pos>  ·  bump <id>  ·  sink <id>"

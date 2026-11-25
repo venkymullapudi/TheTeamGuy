@@ -484,6 +484,17 @@ def budget_quip(fit: int, left: int) -> str:
     return "Today's pot covers the front of the line. The rest is tomorrow's problem."
 
 
+def mine_quip(found: int) -> str:
+    """A spotting-your-own line for `teamguy backlog line --mine <word>`."""
+    if found <= 0:
+        return "Not a single one. Either it's done or it never existed. Both feel great."
+    if found == 1:
+        return "Just the one. Easy to keep an eye on."
+    if found <= 4:
+        return "A little cluster of yours. Wave at them, they're in line."
+    return "That word is everywhere. It's basically a theme now. 🎨"
+
+
 def roll_quip(todo: int) -> str:
     """A dice-rolling line for `teamguy backlog roll`."""
     if todo <= 0:

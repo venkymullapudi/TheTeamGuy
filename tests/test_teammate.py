@@ -1254,3 +1254,29 @@ def test_backlog_line_coffees_marks_the_cut_off(team, state, capsys):
     assert run("backlog", "line") == 0
     assert "cut-off" not in capsys.readouterr().out
     assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only
+
+
+def test_backlog_line_mine_filters_but_keeps_real_seats(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("fix auth bug", 2)
+    state.add_task("polish docs", 3)
+    state.add_task("Auth token refresh", 1)
+    state.add_task("in review auth", 5)["status"] = "review"
+    state.save()
+    assert run("backlog", "line", "--mine", "AUTH") == 0
+    out = capsys.readouterr().out
+    assert "2 of 3 tasks" in out
+    assert "polish docs" not in out and "in review" not in out
+    lines = [ln for ln in out.splitlines() if "#1 " in ln or "#3 " in ln]
+    assert "1. #1" in lines[0] and "up next" in lines[0]
+    assert "3. #3" in lines[1] and "after 5 ☕" in lines[1]
+    assert run("backlog", "line", "--mine", "auth", "--coffees", "4") == 0
+    out = capsys.readouterr().out
+    assert out.index("fix auth bug") < out.index("cut-off") < out.index("Auth token refresh")
+    assert "1 task (2 coffees) fit, 1 wait for tomorrow" in out
+    assert run("backlog", "line", "--mine", "zebra") == 0
+    assert "Nobody in line mentions 'zebra'" in capsys.readouterr().out
+    assert run("backlog", "line", "--mine", "  ") == 1
+    assert "needs a word" in capsys.readouterr().err
+    assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only
