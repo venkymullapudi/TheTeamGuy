@@ -114,7 +114,9 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--days", type=int, default=14, help="todo tasks created at least this many days ago (default 14)")
     bsub.add_parser("next", help="peek at the task work --next would pick, without starting it")
     bsub.add_parser("quick", help="the 'I have ten minutes' menu: todo tasks of just one coffee")
-    bsub.add_parser("line", help="just the todo queue, numbered, with coffees until each one comes up")
+    b = bsub.add_parser("line", help="just the todo queue, numbered, with coffees until each one comes up")
+    b.add_argument("--until", type=int, default=None, metavar="ID",
+                   help="stop the list at this task and say how many coffees stand before it")
     b = bsub.add_parser("roll", help="can't decide? roll the dice: a random todo task jumps to the front")
     b.add_argument("--seed", type=int, default=None, help=argparse.SUPPRESS)
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
@@ -682,15 +684,42 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 print(f"🚶 Nobody in line. {team.guy}: \"{persona.line_quip(0)}\" "
                       "Add one: teamguy backlog add \"...\"")
                 return 0
+            stop = None
+            if args.until is not None:
+                t = state.task(args.until)
+                if not t:
+                    print(f"No task #{args.until}.", file=sys.stderr)
+                    return 1
+                if t["status"] != "todo":
+                    print(f"#{t['id']} is {t['status']}, not todo. It isn't standing in line. 🚷", file=sys.stderr)
+                    return 1
+                stop = todo.index(t) + 1
+                todo = todo[:stop]
             total = sum(int(x.get("effort") or 0) for x in todo)
-            print(persona.c(f"🚶 {team.guy}'s line: {len(todo)} task{'s' if len(todo) != 1 else ''}, "
-                            f"{total} coffee{'s' if total != 1 else ''} deep", "bold"))
+            if stop is not None:
+                ahead = total - int(todo[-1].get("effort") or 0)
+                print(persona.c(f"🚶 Line up to #{todo[-1]['id']}: seat {stop}, "
+                                f"{stop - 1} task{'s' if stop != 2 else ''} ahead", "bold"))
+            else:
+                print(persona.c(f"🚶 {team.guy}'s line: {len(todo)} task{'s' if len(todo) != 1 else ''}, "
+                                f"{total} coffee{'s' if total != 1 else ''} deep", "bold"))
             before = 0
             for i, t in enumerate(todo, 1):
                 wait = "up next" if before == 0 else f"after {before} ☕"
                 print(f"  {i:>2}. #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}"
                       + persona.c(f"  {wait}", "dim"))
                 before += int(t.get("effort") or 0)
+            if stop is not None:
+                t = todo[-1]
+                if ahead == 0:
+                    print(f"  ⏱️  #{t['id']} is up next: zero coffees between it and the front.")
+                else:
+                    print(f"  ⏱️  {ahead} coffee{'s' if ahead != 1 else ''} stand between #{t['id']} and the front.")
+                print(f"  {team.guy}: \"{persona.jump_quip(ahead)}\"")
+                if stop > 1:
+                    print(persona.c(f"  (cut the line: teamguy backlog bump {t['id']}  ·  "
+                                    f"or teamguy backlog move {t['id']} <pos>)", "dim"))
+                return 0
             print(f"  {team.guy}: \"{persona.line_quip(total)}\"")
             print(persona.c("  (reshuffle: teamguy backlog move <id> <pos>  ·  bump <id>  ·  sink <id>"
                             "  ·  swap <a> <b>)", "dim"))

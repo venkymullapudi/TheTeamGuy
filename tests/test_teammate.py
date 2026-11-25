@@ -1201,3 +1201,27 @@ def test_backlog_line_numbers_the_todo_queue(team, state, capsys):
     assert "2. #3" in lines[1] and "after 2 ☕" in lines[1]
     assert "3. #4" in lines[2] and "after 5 ☕" in lines[2]
     assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only
+
+
+def test_backlog_line_until_stops_at_the_task(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("first thing", 2)
+    state.add_task("in review", 5)["status"] = "review"
+    state.add_task("second thing", 3)
+    state.add_task("third thing", 1)
+    state.save()
+    assert run("backlog", "line", "--until", "3") == 0
+    out = capsys.readouterr().out
+    assert "seat 2, 1 task ahead" in out
+    assert "third thing" not in out
+    assert "2 coffees stand between #3 and the front" in out
+    assert "bump 3" in out
+    assert run("backlog", "line", "--until", "1") == 0
+    out = capsys.readouterr().out
+    assert "#1 is up next" in out and "second thing" not in out
+    assert run("backlog", "line", "--until", "2") == 1
+    assert "not todo" in capsys.readouterr().err
+    assert run("backlog", "line", "--until", "99") == 1
+    assert "No task #99" in capsys.readouterr().err
+    assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only

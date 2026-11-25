@@ -462,6 +462,17 @@ def line_quip(coffees: int) -> str:
     return "This line has its own weather system. Maybe sink something? 🌦️"
 
 
+def jump_quip(ahead: int) -> str:
+    """A wait-time line for `teamguy backlog line --until <id>`."""
+    if ahead <= 0:
+        return "Front of the line. Nobody to stare at but the barista."
+    if ahead <= 3:
+        return "A couple of coffees away. Close enough to smell it."
+    if ahead <= 10:
+        return "That's a few refills out. Tap your foot patiently."
+    return "That's a lot of coffee between us. Bump it if it matters. ☕☕☕"
+
+
 def roll_quip(todo: int) -> str:
     """A dice-rolling line for `teamguy backlog roll`."""
     if todo <= 0:
