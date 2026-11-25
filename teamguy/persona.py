@@ -462,6 +462,13 @@ def roll_quip(todo: int) -> str:
     return "Out of all of those? Bold pick, dice. Bold pick."
 
 
+def swap_quip(same: bool) -> str:
+    """A square-dance line for `teamguy backlog swap`."""
+    if same:
+        return "A solo do-si-do. Nothing moved, but the footwork was lovely."
+    return "Do-si-do, swap your partner, round the line you go!"
+
+
 def review_nag(days: int) -> str:
     """A gentle (then less gentle) nudge for work stuck in review. '' when fresh."""
     if days >= 5:

@@ -746,6 +746,27 @@ def test_backlog_quick_lists_one_coffee_todos(team, state, capsys):
     assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only
 
 
+def test_backlog_swap_trades_two_todo_places(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    for title in ("one", "two", "three", "four"):
+        state.add_task(title)
+    state.data["tasks"][3]["status"] = "review"
+    state.save()
+    assert run("backlog", "swap", "1", "3") == 0
+    out = capsys.readouterr().out
+    assert "Swapped #1 and #3" in out and "do-si-do" in out.lower()
+    loaded = State.load(team)
+    assert [t["id"] for t in loaded.tasks] == [3, 2, 1, 4]
+    assert loaded.next_task()["id"] == 3
+    assert run("backlog", "swap", "2", "2") == 0
+    assert "itself" in capsys.readouterr().out
+    assert [t["id"] for t in State.load(team).tasks] == [3, 2, 1, 4]  # untouched
+    assert run("backlog", "swap", "1", "4") == 1  # in review, no dancing
+    assert run("backlog", "swap", "1", "99") == 1
+    assert [t["id"] for t in State.load(team).tasks] == [3, 2, 1, 4]
+
+
 def test_backlog_effort_reestimates_a_todo(team, state, capsys):
     f = str(team.base_dir / "team.yaml")
     run = lambda *a: main(["-f", f, *a])  # noqa: E731

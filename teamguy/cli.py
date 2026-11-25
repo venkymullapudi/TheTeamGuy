@@ -88,6 +88,9 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("id", type=int)
     b = bsub.add_parser("sink", help="move a todo task to the back of the line (it can wait)")
     b.add_argument("id", type=int)
+    b = bsub.add_parser("swap", help="trade the line positions of two todo tasks")
+    b.add_argument("a", type=int)
+    b.add_argument("b", type=int)
     b = bsub.add_parser("effort", help="re-estimate a todo task: 1 (tiny) to 5 (huge) coffees")
     b.add_argument("id", type=int)
     b.add_argument("effort", type=int)
@@ -461,6 +464,26 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             state.sink_task(t)
             state.save()
             print(f"⏬ Sank #{t['id']} to the back: {t['title']}. {team.guy}: \"Filed under someday. No hard feelings.\"")
+            return 0
+        if args.backlog_cmd == "swap":
+            pair = []
+            for tid in (args.a, args.b):
+                t = state.task(tid)
+                if not t:
+                    print(f"No task #{tid}.", file=sys.stderr)
+                    return 1
+                if t["status"] != "todo":
+                    print(f"#{t['id']} is {t['status']}, not todo. Only todo tasks can swap places.", file=sys.stderr)
+                    return 1
+                pair.append(t)
+            a, b = pair
+            if a is b:
+                print(f"🪞 #{a['id']} swapped with itself. {team.guy}: \"{persona.swap_quip(True)}\"")
+                return 0
+            state.swap_tasks(a, b)
+            state.save()
+            print(f"💃 Swapped #{a['id']} and #{b['id']}: {a['title']} ⇄ {b['title']}. "
+                  f"{team.guy}: \"{persona.swap_quip(False)}\"")
             return 0
         if args.backlog_cmd == "effort":
             t = state.task(args.id)

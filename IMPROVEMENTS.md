@@ -16,8 +16,10 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Swap: `teamguy backlog swap <a> <b>` trades the line positions of two todo
-  tasks (finer than bump/sink), with a do-si-do quip.
+- [ ] Move: `teamguy backlog move <id> <pos>` drops a todo task at line position N
+  (1 = next up), for when bump/sink/swap are too blunt.
+- [ ] Peek order: `teamguy backlog line` prints just the todo queue as numbered
+  positions with coffees and a running "coffees until this one" tally.
 
 ## Done
 
@@ -92,3 +94,6 @@ _(empty: the loop takes from Next)_
   the backlog (still done, back in id order) with a journal entry and a sheepish quip.
 - [x] Roll: `teamguy backlog roll` picks a random todo task and bumps it to the
   front of the line (🎲 quip; review/done/blocked never roll; one todo is "rigged").
+
+- [x] Swap: `teamguy backlog swap <a> <b>` trades the line positions of two todo
+  tasks with a do-si-do quip; non-todo or missing ids are refused, self-swap is a no-op.

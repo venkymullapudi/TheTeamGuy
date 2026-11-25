@@ -209,6 +209,11 @@ class State:
         self.tasks.remove(task)
         self.tasks.append(task)
 
+    def swap_tasks(self, a: Dict[str, Any], b: Dict[str, Any]) -> None:
+        """Trade the line positions of two tasks; everyone else stays put."""
+        i, j = self.tasks.index(a), self.tasks.index(b)
+        self.tasks[i], self.tasks[j] = b, a
+
     def rename_task(self, task: Dict[str, Any], title: str) -> None:
         """Reword a task, keeping the old names so the history still makes sense."""
         task.setdefault("renamed", []).append({"at": _now(), "was": task["title"]})
