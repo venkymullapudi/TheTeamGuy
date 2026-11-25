@@ -117,6 +117,8 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("line", help="just the todo queue, numbered, with coffees until each one comes up")
     b.add_argument("--until", type=int, default=None, metavar="ID",
                    help="stop the list at this task and say how many coffees stand before it")
+    b.add_argument("--coffees", type=int, default=None, metavar="N",
+                   help="today's coffee budget: mark where N coffees run out")
     b = bsub.add_parser("roll", help="can't decide? roll the dice: a random todo task jumps to the front")
     b.add_argument("--seed", type=int, default=None, help=argparse.SUPPRESS)
     b = bsub.add_parser("find", help="search tasks of any status by title or summary")
@@ -684,6 +686,10 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 print(f"🚶 Nobody in line. {team.guy}: \"{persona.line_quip(0)}\" "
                       "Add one: teamguy backlog add \"...\"")
                 return 0
+            if args.coffees is not None and args.coffees < 0:
+                print(f"--coffees must be 0 or more, not {args.coffees}. Negative coffee is just tea. 🍵",
+                      file=sys.stderr)
+                return 1
             stop = None
             if args.until is not None:
                 t = state.task(args.until)
@@ -704,11 +710,25 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
                 print(persona.c(f"🚶 {team.guy}'s line: {len(todo)} task{'s' if len(todo) != 1 else ''}, "
                                 f"{total} coffee{'s' if total != 1 else ''} deep", "bold"))
             before = 0
+            cut = None  # seat of the first task today's coffees won't reach
             for i, t in enumerate(todo, 1):
+                effort = int(t.get("effort") or 0)
+                if cut is None and args.coffees is not None and before + effort > args.coffees:
+                    cut = i
+                    print(persona.c(f"  ☕ cut-off: {args.coffees} coffee{'s' if args.coffees != 1 else ''} "
+                                    "run out here. You won't reach these today.", "yellow"))
                 wait = "up next" if before == 0 else f"after {before} ☕"
                 print(f"  {i:>2}. #{t['id']:<3} {t['title']}  {persona.coffee(t['effort'])}"
                       + persona.c(f"  {wait}", "dim"))
-                before += int(t.get("effort") or 0)
+                before += effort
+            if args.coffees is not None:
+                made = len(todo) if cut is None else cut - 1
+                used = sum(int(x.get("effort") or 0) for x in todo[:made])
+                left = len(todo) - made
+                print(f"  ☕ Today's {args.coffees}: {made} task{'s' if made != 1 else ''} "
+                      f"({used} coffee{'s' if used != 1 else ''}) fit"
+                      + (f", {left} wait for tomorrow." if left else ", and the whole line fits. 🎉"))
+                print(f"  {team.guy}: \"{persona.budget_quip(made, left)}\"")
             if stop is not None:
                 t = todo[-1]
                 if ahead == 0:

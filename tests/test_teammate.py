@@ -1225,3 +1225,32 @@ def test_backlog_line_until_stops_at_the_task(team, state, capsys):
     assert run("backlog", "line", "--until", "99") == 1
     assert "No task #99" in capsys.readouterr().err
     assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only
+
+
+def test_backlog_line_coffees_marks_the_cut_off(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    state.add_task("first thing", 2)
+    state.add_task("in review", 5)["status"] = "review"
+    state.add_task("second thing", 3)
+    state.add_task("third thing", 1)
+    state.save()
+    assert run("backlog", "line", "--coffees", "4") == 0
+    out = capsys.readouterr().out
+    lines = out.splitlines()
+    cut = next(i for i, ln in enumerate(lines) if "cut-off" in ln)
+    assert "first thing" in lines[cut - 1] and "second thing" in lines[cut + 1]
+    assert "4 coffees run out here" in lines[cut]
+    assert "1 task (2 coffees) fit, 2 wait for tomorrow" in out
+    assert run("backlog", "line", "--coffees", "6") == 0
+    out = capsys.readouterr().out
+    assert "cut-off" not in out and "whole line fits" in out
+    assert run("backlog", "line", "--coffees", "0") == 0
+    out = capsys.readouterr().out
+    assert out.index("cut-off") < out.index("first thing")
+    assert "0 tasks (0 coffees) fit, 3 wait" in out
+    assert run("backlog", "line", "--coffees", "-1") == 1
+    assert "0 or more" in capsys.readouterr().err
+    assert run("backlog", "line") == 0
+    assert "cut-off" not in capsys.readouterr().out
+    assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only

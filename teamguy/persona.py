@@ -473,6 +473,17 @@ def jump_quip(ahead: int) -> str:
     return "That's a lot of coffee between us. Bump it if it matters. ☕☕☕"
 
 
+def budget_quip(fit: int, left: int) -> str:
+    """A coffee-budget line for `teamguy backlog line --coffees N`."""
+    if fit == 0:
+        return "Not even the first one fits. Brew a bigger pot or shrink the task. 🫖"
+    if left == 0:
+        return "Everything fits. Clear the line, then put your feet up."
+    if left <= 2:
+        return "So close. A couple of stragglers for tomorrow's me."
+    return "Today's pot covers the front of the line. The rest is tomorrow's problem."
+
+
 def roll_quip(todo: int) -> str:
     """A dice-rolling line for `teamguy backlog roll`."""
     if todo <= 0:

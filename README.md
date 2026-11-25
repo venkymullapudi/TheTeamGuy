@@ -62,6 +62,7 @@ teamguy backlog next                            # 👉 peek at what work --next 
 teamguy backlog quick                           # ⚡ got ten minutes? the one-coffee todo menu
 teamguy backlog line                            # 🚶 the todo queue, numbered, with coffees until each comes up
 teamguy backlog line --until 9                  # ⏱️ stop at #9: how many coffees stand between it and the front
+teamguy backlog line --coffees 4                # ☕ mark where today's 4 coffees run out (the cut-off)
 teamguy backlog roll                            # 🎲 can't choose? a random todo jumps to the front
 teamguy backlog sweep --days 30                 # 🧹 archive done tasks accepted 30+ days ago
 teamguy backlog unsweep 7                       # 📦 oops, too eager: bring #7 back (still done)
