@@ -767,6 +767,34 @@ def test_backlog_swap_trades_two_todo_places(team, state, capsys):
     assert [t["id"] for t in State.load(team).tasks] == [3, 2, 1, 4]
 
 
+def test_backlog_move_drops_a_todo_at_a_position(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    for title in ("one", "two", "three", "four", "five"):
+        state.add_task(title)
+    state.data["tasks"][1]["status"] = "review"  # #2 sits out, keeps its spot
+    state.save()
+    ids = lambda: [t["id"] for t in State.load(team).tasks]  # noqa: E731
+    assert run("backlog", "move", "5", "2") == 0
+    out = capsys.readouterr().out
+    assert "from position 4 to 2" in out and "Up 2 spots" in out
+    assert ids() == [1, 2, 5, 3, 4]
+    assert run("backlog", "move", "1", "99") == 0  # clamps to the back
+    out = capsys.readouterr().out
+    assert "from position 1 to 4" in out and "only 4 in line" in out
+    assert ids() == [2, 5, 3, 4, 1]
+    assert State.load(team).next_task()["id"] == 5
+    assert run("backlog", "move", "1", "1") == 0
+    assert "Front row" in capsys.readouterr().out
+    assert ids() == [2, 1, 5, 3, 4]
+    assert run("backlog", "move", "3", "3") == 0
+    assert "stays at #3" in capsys.readouterr().out
+    assert run("backlog", "move", "2", "1") == 1  # in review
+    assert run("backlog", "move", "3", "0") == 1
+    assert run("backlog", "move", "99", "1") == 1
+    assert ids() == [2, 1, 5, 3, 4]
+
+
 def test_backlog_effort_reestimates_a_todo(team, state, capsys):
     f = str(team.base_dir / "team.yaml")
     run = lambda *a: main(["-f", f, *a])  # noqa: E731

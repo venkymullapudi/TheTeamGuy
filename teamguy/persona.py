@@ -469,6 +469,17 @@ def swap_quip(same: bool) -> str:
     return "Do-si-do, swap your partner, round the line you go!"
 
 
+def move_quip(old: int, new: int) -> str:
+    """A valet-parking line for `teamguy backlog move`."""
+    if old == new:
+        return "Parked it right where it already was. Valet of the year."
+    if new == 1:
+        return "Front row seat. That's next, no questions asked."
+    if new < old:
+        return f"Up {old - new} {'spot' if old - new == 1 else 'spots'}. Somebody knows somebody."
+    return f"Back {new - old} {'spot' if new - old == 1 else 'spots'}. It'll keep, like a good cheese. 🧀"
+
+
 def review_nag(days: int) -> str:
     """A gentle (then less gentle) nudge for work stuck in review. '' when fresh."""
     if days >= 5:

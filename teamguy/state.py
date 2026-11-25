@@ -214,6 +214,27 @@ class State:
         i, j = self.tasks.index(a), self.tasks.index(b)
         self.tasks[i], self.tasks[j] = b, a
 
+    def todo_position(self, task: Dict[str, Any]) -> int:
+        """1-based place of a todo task in line (0 if it isn't todo)."""
+        todo = [t for t in self.tasks if t["status"] == "todo"]
+        return todo.index(task) + 1 if task in todo else 0
+
+    def move_task(self, task: Dict[str, Any], pos: int) -> int:
+        """Drop a todo task at line position `pos` (1 = next up), clamped to the line.
+
+        Non-todo tasks keep their spots. Returns the position it landed on.
+        """
+        others = [t for t in self.tasks if t["status"] == "todo" and t is not task]
+        pos = max(1, min(int(pos), len(others) + 1))
+        self.tasks.remove(task)
+        if pos <= len(others):
+            self.tasks.insert(self.tasks.index(others[pos - 1]), task)
+        elif others:
+            self.tasks.insert(self.tasks.index(others[-1]) + 1, task)
+        else:
+            self.tasks.append(task)
+        return pos
+
     def rename_task(self, task: Dict[str, Any], title: str) -> None:
         """Reword a task, keeping the old names so the history still makes sense."""
         task.setdefault("renamed", []).append({"at": _now(), "was": task["title"]})

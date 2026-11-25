@@ -16,13 +16,13 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Move: `teamguy backlog move <id> <pos>` drops a todo task at line position N
-  (1 = next up), for when bump/sink/swap are too blunt.
 - [ ] Peek order: `teamguy backlog line` prints just the todo queue as numbered
   positions with coffees and a running "coffees until this one" tally.
 
 ## Done
 
+- [x] Move: `teamguy backlog move <id> <pos>` drops a todo task at line position N
+  (1 = next up, past the end lands it last); non-todo tasks keep their spots.
 - [x] Quick wins: `teamguy backlog quick` lists one-coffee todo tasks in line
   order with their XP, the total on the table, and a nudge to bump one.
 

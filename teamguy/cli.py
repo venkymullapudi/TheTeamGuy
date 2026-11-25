@@ -91,6 +91,9 @@ def build_parser() -> argparse.ArgumentParser:
     b = bsub.add_parser("swap", help="trade the line positions of two todo tasks")
     b.add_argument("a", type=int)
     b.add_argument("b", type=int)
+    b = bsub.add_parser("move", help="drop a todo task at line position N (1 = next up)")
+    b.add_argument("id", type=int)
+    b.add_argument("pos", type=int, help="where in the todo line it should land (1 = next up)")
     b = bsub.add_parser("effort", help="re-estimate a todo task: 1 (tiny) to 5 (huge) coffees")
     b.add_argument("id", type=int)
     b.add_argument("effort", type=int)
@@ -484,6 +487,27 @@ def _teammate(team: Team, args: argparse.Namespace) -> int:
             state.save()
             print(f"💃 Swapped #{a['id']} and #{b['id']}: {a['title']} ⇄ {b['title']}. "
                   f"{team.guy}: \"{persona.swap_quip(False)}\"")
+            return 0
+        if args.backlog_cmd == "move":
+            t = state.task(args.id)
+            if not t:
+                print(f"No task #{args.id}.", file=sys.stderr)
+                return 1
+            if t["status"] != "todo":
+                print(f"#{t['id']} is {t['status']}, not todo. Only todo tasks can change seats.", file=sys.stderr)
+                return 1
+            if args.pos < 1:
+                print("Positions start at 1 (next up). There's no seat zero, I checked. 🪑", file=sys.stderr)
+                return 1
+            old = state.todo_position(t)
+            new = state.move_task(t, args.pos)
+            if new == old:
+                print(f"🅿️  #{t['id']} stays at #{new} in line. {team.guy}: \"{persona.move_quip(old, new)}\"")
+                return 0
+            state.save()
+            clamp = f" (only {new} in line)" if new < args.pos else ""
+            print(f"🚚 Moved #{t['id']} from position {old} to {new}{clamp}: {t['title']}. "
+                  f"{team.guy}: \"{persona.move_quip(old, new)}\"")
             return 0
         if args.backlog_cmd == "effort":
             t = state.task(args.id)
