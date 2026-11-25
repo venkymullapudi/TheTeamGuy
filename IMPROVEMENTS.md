@@ -16,10 +16,15 @@ _(empty: the loop takes from Next)_
 
 ## Next
 
-- [ ] Peek order: `teamguy backlog line` prints just the todo queue as numbered
-  positions with coffees and a running "coffees until this one" tally.
+- [ ] Line jump hint: `teamguy backlog line --until <id>` stops the list at that
+  task and says how many coffees stand between it and the front.
+- [ ] Coffee budget: `teamguy backlog line --coffees N` marks where today's N
+  coffees run out ("☕ cut-off: you won't reach these today").
 
 ## Done
+
+- [x] Peek order: `teamguy backlog line` prints just the todo queue as numbered
+  positions with coffees and a running "coffees until this one" tally (read-only).
 
 - [x] Move: `teamguy backlog move <id> <pos>` drops a todo task at line position N
   (1 = next up, past the end lands it last); non-todo tasks keep their spots.

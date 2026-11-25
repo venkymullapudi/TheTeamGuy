@@ -1180,3 +1180,24 @@ def test_task_age_handles_missing_or_odd_created(state):
     assert State.task_age({"created": "2026-11-10T08:00:00"}, today) == 14
     assert State.task_age({}, today) == 0
     assert State.task_age({"created": "someday"}, today) == 0
+
+
+def test_backlog_line_numbers_the_todo_queue(team, state, capsys):
+    f = str(team.base_dir / "team.yaml")
+    run = lambda *a: main(["-f", f, *a])  # noqa: E731
+    assert run("backlog", "line") == 0
+    assert "Nobody in line" in capsys.readouterr().out
+    state.add_task("first thing", 2)
+    state.add_task("in review", 5)["status"] = "review"
+    state.add_task("second thing", 3)
+    state.add_task("third thing", 1)
+    state.save()
+    assert run("backlog", "line") == 0
+    out = capsys.readouterr().out
+    assert "3 tasks, 6 coffees deep" in out
+    assert "in review" not in out
+    lines = [ln for ln in out.splitlines() if "thing" in ln]
+    assert "1. #1" in lines[0] and "up next" in lines[0]
+    assert "2. #3" in lines[1] and "after 2 ☕" in lines[1]
+    assert "3. #4" in lines[2] and "after 5 ☕" in lines[2]
+    assert [t["id"] for t in State.load(team).tasks] == [1, 2, 3, 4]  # read-only

@@ -451,6 +451,17 @@ def quick_quip(quick: int) -> str:
     return "That's a buffet. A whole buffet of easy XP. Who's hungry? 🍤"
 
 
+def line_quip(coffees: int) -> str:
+    """A queue-watching line for `teamguy backlog line`."""
+    if coffees <= 0:
+        return "An empty queue. Like the DMV at 4:59, but nicer."
+    if coffees <= 3:
+        return "Short line. I can see the front from here."
+    if coffees <= 10:
+        return "A respectable queue. Bring a snack, not a sleeping bag."
+    return "This line has its own weather system. Maybe sink something? 🌦️"
+
+
 def roll_quip(todo: int) -> str:
     """A dice-rolling line for `teamguy backlog roll`."""
     if todo <= 0:
